@@ -1,4 +1,4 @@
-# Tarea 1
+# Proyecto Pruebas de Software
 ## Integrantes y autores:
 - Esteban Becerra
 - Javiera Cortés
