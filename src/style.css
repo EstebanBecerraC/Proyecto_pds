@@ -175,3 +175,11 @@ a:focus-visible { outline: 3px solid #70ac94; outline-offset: 5px; }
   .form-actions { flex-direction: column-reverse; align-items: stretch; text-align: center; }
 }
 .active-badge { color: #216454; background: #e5f2e9; }
+.catalog-count { color: #708078; font-size: .85rem; margin: 0 0 24px; }
+.goal-caption { display: block; color: #708078; font-size: .75rem; margin-bottom: 6px; }
+.funding-progress { display: grid; gap: 9px; margin-top: 18px; color: #216454; font-size: .85rem; font-weight: 600; }
+.funding-progress progress { width: 100%; height: 8px; accent-color: #216454; border: none; border-radius: 8px; overflow: hidden; }
+.funding-progress progress::-webkit-progress-bar { background: #e5ece2; }
+.funding-progress progress::-webkit-progress-value { background: #216454; }
+.pagination-controls { display: flex; justify-content: center; align-items: center; gap: 24px; margin-top: 40px; color: #52675b; font-size: .85rem; }
+@media (max-width: 480px) { .pagination-controls { flex-wrap: wrap; gap: 12px; } }

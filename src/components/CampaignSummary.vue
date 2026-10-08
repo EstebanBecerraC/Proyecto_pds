@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import { requestApi } from '../api.js'
 import { formatDeadline, formatGoal } from '../../shared/campaign.js'
 
-const props = defineProps({ campaignId: { type: String, required: true } })
+const props = defineProps({ campaignId: { type: String, required: true }, userId: { type: Number, required: true } })
 const emit = defineEmits(['session-expired'])
 const campaign = ref(null)
 const loading = ref(true)
@@ -45,17 +45,17 @@ watch(() => props.campaignId, load, { immediate: true })
 
 <template>
   <main class="home-content">
-    <a class="back-link" href="#/home">← Volver a mis campañas</a>
+    <a class="back-link" :href="campaign?.owner_id === userId ? '#/my-campaigns' : '#/home'">← Volver</a>
     <p v-if="loading" role="status">Cargando campaña…</p>
     <div v-else-if="error"><p class="message error" role="alert">{{ error }}</p><button class="outline-button" @click="load">Reintentar</button></div>
     <article v-else-if="campaign" class="campaign-summary">
-      <p class="badge">RESUMEN DE TU CAMPAÑA</p>
+      <p class="badge">RESUMEN DE LA CAMPAÑA</p>
       <span class="draft-badge" :class="{ 'active-badge': campaign.status === 'Activa' }" role="status">{{ campaign.status }}</span>
       <h1>{{ campaign.title }}</h1>
       <p v-if="campaign.status === 'Borrador'" class="home-lead">Tu campaña está guardada como borrador.</p>
-      <p v-else class="home-lead">Tu campaña está activa.</p>
+      <p v-else class="home-lead">Esta campaña está activa.</p>
       <p v-if="activationError" class="message error" role="alert">{{ activationError }}</p>
-      <button v-if="campaign.status === 'Borrador'" class="button-link" type="button" :disabled="activating" @click="activate">{{ activating ? 'Activando…' : 'Activar campaña' }}</button>
+      <button v-if="campaign.status === 'Borrador' && campaign.owner_id === userId" class="button-link" type="button" :disabled="activating" @click="activate">{{ activating ? 'Activando…' : 'Activar campaña' }}</button>
       <img :src="campaign.imageUrl" :alt="'Imagen de ' + campaign.title" class="summary-image" />
       <dl class="campaign-facts">
         <div><dt>Categoría</dt><dd>{{ campaign.category }}</dd></div>
@@ -63,7 +63,7 @@ watch(() => props.campaignId, load, { immediate: true })
         <div><dt>Fecha límite</dt><dd>{{ formatDeadline(campaign.deadline) }}</dd></div>
       </dl>
       <section class="campaign-description"><h2>Acerca del proyecto</h2><p>{{ campaign.description }}</p></section>
-      <a class="button-link" href="#/home">Volver a mis campañas</a>
+      <a class="button-link" :href="campaign.owner_id === userId ? '#/my-campaigns' : '#/home'">{{ campaign.owner_id === userId ? 'Volver a mis campañas' : 'Volver al catálogo' }}</a>
     </article>
   </main>
 </template>

@@ -1,3 +1,4 @@
+import { createCatalog } from './catalog.js'
 import { goalToCents, validateCampaign } from '../shared/campaign.js'
 
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
@@ -27,6 +28,7 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
       goal_cents INTEGER NOT NULL CHECK(goal_cents > 0),
       deadline TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'Borrador' CHECK(status IN ('Borrador', 'Activa')),
+      raised_cents INTEGER NOT NULL DEFAULT 0 CHECK(raised_cents >= 0),
       creation_key TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(owner_id, creation_key)
@@ -37,12 +39,13 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
   if (/CHECK\s*\(\s*status\s*=\s*'Borrador'\s*\)/i.test(existingSchema)) {
     // SQLite requires rebuilding a table to change a CHECK constraint.
     // The transaction preserves all existing campaign data and IDs.
+    const hasRaised = db.query('PRAGMA table_info(campaigns)').all().some(column => column.name === 'raised_cents')
     db.transaction(() => {
       db.exec(schema.replace('CREATE TABLE IF NOT EXISTS campaigns (', 'CREATE TABLE campaigns_updated ('))
       db.exec(`
         INSERT INTO campaigns_updated
-          (id, owner_id, title, description, category, image, image_type, goal_cents, deadline, status, creation_key, created_at)
-        SELECT id, owner_id, title, description, category, image, image_type, goal_cents, deadline, status, creation_key, created_at
+          (id, owner_id, title, description, category, image, image_type, goal_cents, deadline, status, raised_cents, creation_key, created_at)
+        SELECT id, owner_id, title, description, category, image, image_type, goal_cents, deadline, status, ${hasRaised ? 'raised_cents' : '0'}, creation_key, created_at
         FROM campaigns;
         DROP TABLE campaigns;
         ALTER TABLE campaigns_updated RENAME TO campaigns;
@@ -51,12 +54,15 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
   }
   db.exec('CREATE INDEX IF NOT EXISTS campaigns_owner ON campaigns(owner_id)')
 
+  const catalog = createCatalog(db)
+
   return async function handle(request) {
     const user = getUser(request)
     if (!user) return json({ error: 'Debes iniciar sesión.' }, 401)
     const path = new URL(request.url).pathname
     if (request.method === 'POST' && request.headers.get('origin') !== origin)
       return json({ error: 'Origen no permitido.' }, 403)
+    if (path === '/api/campaigns/catalog' && request.method === 'GET') return catalog(request)
     if (path === '/api/campaigns' && request.method === 'GET') {
       const rows = db.query(`SELECT ${fields} FROM campaigns WHERE owner_id = ? ORDER BY id DESC`).all(user.id)
       return json({ campaigns: rows.map(serialize) })
@@ -97,12 +103,12 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
     const match = path.match(/^\/api\/campaigns\/(\d+)(\/image)?$/)
     if (match && request.method === 'GET') {
       if (match[2]) {
-        const image = db.query('SELECT image, image_type FROM campaigns WHERE id = ? AND owner_id = ?').get(match[1], user.id)
+        const image = db.query("SELECT image, image_type FROM campaigns WHERE id = ? AND (owner_id = ? OR status = 'Activa')").get(match[1], user.id)
         return image ? new Response(image.image, { headers: {
           'Content-Type': image.image_type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
         } }) : json({ error: 'Campaña no encontrada.' }, 404)
       }
-      const campaign = db.query(`SELECT ${fields} FROM campaigns WHERE id = ? AND owner_id = ?`).get(match[1], user.id)
+      const campaign = db.query(`SELECT ${fields} FROM campaigns WHERE id = ? AND (owner_id = ? OR status = 'Activa')`).get(match[1], user.id)
       return campaign ? json({ campaign: serialize(campaign) }) : json({ error: 'Campaña no encontrada.' }, 404)
     }
     return json({ error: 'Ruta no encontrada.' }, 404)

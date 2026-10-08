@@ -46,3 +46,8 @@ export const formatGoal = cents => new Intl.NumberFormat('es-CL', {
 export const formatDeadline = value => new Intl.DateTimeFormat('es-CL', {
   day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
 }).format(new Date(value + 'T00:00:00Z'))
+
+export function fundingPercentage(raisedCents, goalCents) {
+  if (!(goalCents > 0) || !(raisedCents >= 0)) return 0
+  return Math.round((raisedCents / goalCents) * 10000) / 100
+}
