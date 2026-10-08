@@ -34,6 +34,12 @@ export function createAuth(databasePath, { origin = 'http://localhost:5173', sec
   // Used for unknown accounts too, so password verification follows the same path.
   const dummyHash = Bun.password.hashSync(crypto.randomUUID(), { algorithm: 'argon2id' })
 
+  function getUser(request) {
+    const token = getToken(request)
+    return token ? db.query(`SELECT users.id, users.name, users.email
+      FROM sessions JOIN users ON users.id = sessions.user_id
+      WHERE sessions.token_hash = ? AND sessions.expires_at > ?`).get(tokenHash(token), Date.now()) : null
+  }
   function session(user, oldToken) {
     const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, '0')).join('')
     db.transaction(() => {
@@ -53,9 +59,7 @@ export function createAuth(databasePath, { origin = 'http://localhost:5173', sec
 
     const token = getToken(request)
     if (path === '/api/auth/me' && request.method === 'GET') {
-      const user = token && db.query(`SELECT users.id, users.name, users.email
-        FROM sessions JOIN users ON users.id = sessions.user_id
-        WHERE sessions.token_hash = ? AND sessions.expires_at > ?`).get(tokenHash(token), Date.now())
+      const user = getUser(request)
       return user ? json({ user }) : json({ error: 'Debes iniciar sesión.' }, 401)
     }
     if (path === '/api/auth/logout' && request.method === 'POST') {
@@ -105,6 +109,7 @@ export function createAuth(databasePath, { origin = 'http://localhost:5173', sec
 
   return {
     db,
+    getUser,
     async fetch(request, ip) {
       try { return await handle(request, ip) }
       catch (error) {

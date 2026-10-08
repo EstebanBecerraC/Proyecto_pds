@@ -2,11 +2,14 @@
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import LandingPage from './components/LandingPage.vue'
 import HomePage from './components/HomePage.vue'
+import MemberLayout from './components/MemberLayout.vue'
+import CampaignForm from './components/CampaignForm.vue'
+import CampaignSummary from './components/CampaignSummary.vue'
 
 const allowedPages = ['landing', 'login', 'register', 'home']
 const readPage = () => {
   const value = window.location.hash.replace(/^#\/?/, '') || 'landing'
-  return allowedPages.includes(value) ? value : 'landing'
+  return allowedPages.includes(value) || /^campaigns\/(new|[1-9]\d*)$/.test(value) ? value : 'landing'
 }
 const page = ref(readPage())
 const user = ref(null)
@@ -25,13 +28,13 @@ function navigate(destination, { replace = false, preserveNotice = false } = {})
   form.confirmation = ''
   error.value = ''
   if (!preserveNotice) notice.value = ''
-  document.title = ({ landing: 'CrowdStarter | Ideas que crecen juntas', login: 'Iniciar sesión | CrowdStarter', register: 'Crear cuenta | CrowdStarter', home: 'Inicio | CrowdStarter' })[destination]
+  document.title = ({ landing: 'CrowdStarter | Ideas que crecen juntas', login: 'Iniciar sesión | CrowdStarter', register: 'Crear cuenta | CrowdStarter', home: 'Inicio | CrowdStarter' })[destination] || 'Campañas | CrowdStarter'
   window.scrollTo(0, 0)
 }
 
 function guardPage() {
   let destination = readPage()
-  if (destination === 'home' && !user.value) destination = 'login'
+  if ((destination === 'home' || destination.startsWith('campaigns/')) && !user.value) destination = 'login'
   if (user.value && ['login', 'register'].includes(destination)) destination = 'home'
   navigate(destination, { replace: true })
 }
@@ -81,6 +84,12 @@ async function submit() {
   } finally { busy.value = false }
 }
 
+function sessionExpired() {
+  user.value = null
+  navigate('login', { replace: true })
+  notice.value = 'Tu sesión terminó. Inicia sesión nuevamente.'
+}
+
 async function logout() {
   busy.value = true
   error.value = ''
@@ -112,7 +121,11 @@ onUnmounted(() => window.removeEventListener('hashchange', onHashChange))
 <template>
   <div v-if="loading" class="session-loading" role="status"><span class="wordmark">CrowdStarter.</span><p>Comprobando tu sesión…</p></div>
   <LandingPage v-else-if="page === 'landing'" :signed-in="!!user" />
-  <HomePage v-else-if="page === 'home' && user" :user="user" :busy="busy" :error="error" @logout="logout" />
+  <HomePage v-else-if="page === 'home' && user" :user="user" :busy="busy" :error="error" @logout="logout" @session-expired="sessionExpired" />
+  <MemberLayout v-else-if="user && page.startsWith('campaigns/')" :busy="busy" :error="error" @logout="logout">
+    <CampaignForm v-if="page === 'campaigns/new'" @saved="campaign => navigate('campaigns/' + campaign.id, { replace: true })" @session-expired="sessionExpired" />
+    <CampaignSummary v-else :campaign-id="page.split('/')[1]" @session-expired="sessionExpired" />
+  </MemberLayout>
   <main v-else class="auth-layout">
     <section class="intro">
       <a class="brand auth-brand" href="#/">CrowdStarter</a>
