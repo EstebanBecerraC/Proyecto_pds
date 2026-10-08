@@ -10,22 +10,34 @@ const campaigns = ref([])
 const pagination = ref({ page: 1, pageSize: 25, total: 0, totalPages: 0 })
 const loading = ref(true)
 const loadError = ref('')
+const searchTerm = ref('')
+const appliedSearch = ref('')
 let version = 0
 
-async function load(page = pagination.value.page) {
+async function load(page = pagination.value.page, search = appliedSearch.value) {
   const current = ++version
   loading.value = true
   loadError.value = ''
   try {
-    const result = await requestApi('/api/campaigns/catalog?page=' + page)
+    const parameters = new URLSearchParams({ page: String(page) })
+    if (search) parameters.set('q', search)
+    const result = await requestApi('/api/campaigns/catalog?' + parameters)
     if (current !== version) return
     campaigns.value = result.campaigns
     pagination.value = result.pagination
+    appliedSearch.value = search
   } catch (failure) {
     if (current !== version) return
     if (failure.status === 401) emit('session-expired')
     else loadError.value = failure.message
   } finally { if (current === version) loading.value = false }
+}
+function submitSearch() {
+  load(1, searchTerm.value.trim())
+}
+function clearSearch() {
+  searchTerm.value = ''
+  load(1, '')
 }
 function changePage(page) {
   if (loading.value) return
@@ -45,15 +57,35 @@ onUnmounted(() => { version++ })
         <a class="button-link" href="#/campaigns/new">Crear campaña <span aria-hidden="true">＋</span></a>
       </div>
       <h2 class="campaign-list-title">Campañas activas</h2>
+      <form class="campaign-search" role="search" @submit.prevent="submitSearch">
+        <label class="sr-only" for="campaign-search">Buscar campañas por título o descripción</label>
+        <input
+          id="campaign-search"
+          v-model="searchTerm"
+          type="search"
+          maxlength="120"
+          autocomplete="off"
+          placeholder="Busca por título o descripción"
+        />
+        <button class="search-button" type="submit" :disabled="loading" aria-label="Buscar campañas">
+          <span aria-hidden="true">⌕</span><span>Buscar</span>
+        </button>
+        <button v-if="appliedSearch" class="clear-search" type="button" :disabled="loading" @click="clearSearch">Limpiar búsqueda</button>
+      </form>
       <p v-if="loading" role="status">Cargando campañas…</p>
       <div v-else-if="loadError"><p class="message error" role="alert">{{ loadError }}</p><button class="outline-button" @click="load()">Reintentar</button></div>
+      <section v-else-if="pagination.total === 0 && appliedSearch" class="placeholder-panel search-empty" role="status">
+        <div class="placeholder-symbol" aria-hidden="true">⌕</div>
+        <h2>No se encontraron campañas para esta búsqueda</h2>
+        <p>Prueba con otro título o una palabra de la descripción.</p>
+      </section>
       <section v-else-if="pagination.total === 0" class="placeholder-panel">
         <div class="placeholder-symbol" aria-hidden="true">↗</div>
         <h2>Todavía no hay campañas activas</h2>
         <p>Vuelve pronto para descubrir nuevos proyectos de la comunidad.</p>
       </section>
       <template v-else>
-        <p class="catalog-count" role="status">Mostrando {{ (pagination.page - 1) * pagination.pageSize + 1 }}–{{ (pagination.page - 1) * pagination.pageSize + campaigns.length }} de {{ pagination.total }} campañas activas</p>
+        <p class="catalog-count" role="status">Mostrando {{ (pagination.page - 1) * pagination.pageSize + 1 }}–{{ (pagination.page - 1) * pagination.pageSize + campaigns.length }} de {{ pagination.total }} {{ appliedSearch ? 'campañas encontradas' : 'campañas activas' }}</p>
         <div class="campaign-grid">
           <a v-for="campaign in campaigns" :key="campaign.id" :href="'#/campaigns/' + campaign.id" class="campaign-tile">
             <img :src="campaign.imageUrl" :alt="'Imagen de ' + campaign.title" loading="lazy" />

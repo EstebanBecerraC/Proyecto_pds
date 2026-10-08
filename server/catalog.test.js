@@ -16,11 +16,12 @@ beforeEach(() => {
 })
 afterEach(() => app.close())
 
-function seed(status = 'Activa', ownerId = 2, raised = 0, goal = 100000) {
+function seed(status = 'Activa', ownerId = 2, raised = 0, goal = 100000, overrides = {}) {
   const result = app.db.query(`INSERT INTO campaigns
     (owner_id, title, description, category, image, image_type, goal_cents, raised_cents, deadline, status, creation_key)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(ownerId, 'Proyecto ' + crypto.randomUUID(), 'Descripción del proyecto.', 'Comunidad', png, 'image/png', goal, raised, '2099-12-31', status, crypto.randomUUID())
+    .run(ownerId, overrides.title ?? 'Proyecto ' + crypto.randomUUID(), overrides.description ?? 'Descripción del proyecto.',
+      overrides.category ?? 'Comunidad', png, 'image/png', goal, raised, '2099-12-31', status, crypto.randomUUID())
   return Number(result.lastInsertRowid)
 }
 function get(path = '/api/campaigns/catalog', signedIn = true) {
@@ -77,6 +78,46 @@ test('sin activas devuelve una lista vacía y total cero incluso si hay borrador
   const result = await (await get()).json()
   expect(result.campaigns).toEqual([])
   expect(result.pagination).toEqual({ page: 1, pageSize: 25, total: 0, totalPages: 0 })
+})
+
+test('busca coincidencias parciales en título y descripción sin distinguir mayúsculas', async () => {
+  const titleMatch = seed('Activa', 2, 0, 100000, { title: 'Huerto Urbano', description: 'Cultivos locales' })
+  const descriptionMatch = seed('Activa', 2, 0, 100000, { title: 'Biblioteca vecinal', description: 'Un HUERTO educativo' })
+  seed('Activa', 2, 0, 100000, { title: 'Festival de arte', description: 'Música comunitaria' })
+  seed('Borrador', 2, 0, 100000, { title: 'Huerto privado' })
+  const response = await get('/api/campaigns/catalog?q=huerto')
+  expect(response.status).toBe(200)
+  const result = await response.json()
+  expect(result.campaigns.map(row => row.id)).toEqual([descriptionMatch, titleMatch])
+  expect(result.pagination).toEqual({ page: 1, pageSize: 25, total: 2, totalPages: 1 })
+})
+
+test('una búsqueda sin coincidencias devuelve grilla vacía y total cero', async () => {
+  seed('Activa', 2, 0, 100000, { title: 'Energía solar', description: 'Paneles para la escuela' })
+  const startedAt = performance.now()
+  const result = await (await get('/api/campaigns/catalog?q=teatro')).json()
+  expect(performance.now() - startedAt).toBeLessThan(1000)
+  expect(result.campaigns).toEqual([])
+  expect(result.pagination).toEqual({ page: 1, pageSize: 25, total: 0, totalPages: 0 })
+})
+
+test('la búsqueda conserva paginación, recorta espacios y trata comodines como texto', async () => {
+  for (let index = 0; index < 27; index++) {
+    seed('Activa', 2, 0, 100000, { title: `Coincidencia ${index}`, description: 'Descripción común' })
+  }
+  seed('Activa', 2, 0, 100000, { title: 'Cien % real', description: 'Símbolo literal' })
+  seed('Activa', 2, 0, 100000, { title: 'Otro proyecto', description: 'Sin el símbolo' })
+  const secondPage = await (await get('/api/campaigns/catalog?page=2&q=%20%20coincidencia%20%20')).json()
+  expect(secondPage.campaigns).toHaveLength(2)
+  expect(secondPage.pagination).toEqual({ page: 2, pageSize: 25, total: 27, totalPages: 2 })
+  const literal = await (await get('/api/campaigns/catalog?q=%25')).json()
+  expect(literal.campaigns.map(row => row.title)).toEqual(['Cien % real'])
+})
+
+test('rechaza términos de búsqueda que superan el máximo permitido', async () => {
+  const response = await get('/api/campaigns/catalog?q=' + 'a'.repeat(121))
+  expect(response.status).toBe(400)
+  expect((await response.json()).error).toContain('120 caracteres')
 })
 
 test('valida páginas y normaliza solicitudes fuera del rango', async () => {

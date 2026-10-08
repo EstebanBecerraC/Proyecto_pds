@@ -176,10 +176,26 @@ a:focus-visible { outline: 3px solid #70ac94; outline-offset: 5px; }
 }
 .active-badge { color: #216454; background: #e5f2e9; }
 .catalog-count { color: #708078; font-size: .85rem; margin: 0 0 24px; }
+.campaign-search { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; margin: -8px 0 24px; }
+.campaign-search input { min-width: 0; }
+.search-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px; border: 1px solid #216454; border-radius: 8px; background: #216454; color: #fff; font-weight: 600; }
+.search-button:hover:not(:disabled) { background: #174c3f; }
+.clear-search { border: 0; background: transparent; color: #216454; padding: 12px 4px; font-weight: 600; }
+.clear-search:hover:not(:disabled) { text-decoration: underline; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.search-empty { min-height: 260px; display: flex; flex-direction: column; justify-content: center; }
 .goal-caption { display: block; color: #708078; font-size: .75rem; margin-bottom: 6px; }
 .funding-progress { display: grid; gap: 9px; margin-top: 18px; color: #216454; font-size: .85rem; font-weight: 600; }
 .funding-progress progress { width: 100%; height: 8px; accent-color: #216454; border: none; border-radius: 8px; overflow: hidden; }
 .funding-progress progress::-webkit-progress-bar { background: #e5ece2; }
 .funding-progress progress::-webkit-progress-value { background: #216454; }
 .pagination-controls { display: flex; justify-content: center; align-items: center; gap: 24px; margin-top: 40px; color: #52675b; font-size: .85rem; }
-@media (max-width: 480px) { .pagination-controls { flex-wrap: wrap; gap: 12px; } }
+@media (max-width: 600px) {
+  .campaign-search { grid-template-columns: minmax(0, 1fr) auto; }
+  .clear-search { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 480px) {
+  .pagination-controls { flex-wrap: wrap; gap: 12px; }
+  .search-button span:last-child { display: none; }
+  .search-button { padding: 0 17px; }
+}
