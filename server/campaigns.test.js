@@ -22,7 +22,9 @@ beforeAll(async () => {
   ownerCookie = await createUser(app, 'owner@example.test')
   otherCookie = await createUser(app, 'other@example.test')
 })
-beforeEach(() => { app.db.query('DELETE FROM campaigns').run() })
+beforeEach(() => {
+  app.db.exec('DELETE FROM contributions; DELETE FROM campaigns;')
+})
 afterAll(() => app.close())
 
 function form(overrides = {}, image = new File([png], 'imagen.png', { type: 'image/png' }), creationKey = crypto.randomUUID()) {
@@ -191,6 +193,14 @@ function remove(id, cookie = ownerCookie, origin = 'http://localhost:5173') {
   }))
 }
 
+function contribute(id, amount, cookie = ownerCookie, origin = 'http://localhost:5173', contentType = 'application/json') {
+  return app.fetch(new Request('http://localhost:3000/api/campaigns/' + id + '/contributions', {
+    method: 'POST',
+    headers: { Origin: origin, 'Content-Type': contentType, ...(cookie ? { Cookie: cookie } : {}) },
+    body: contentType === 'application/json' ? JSON.stringify({ amount }) : String(amount),
+  }))
+}
+
 test('el creador activa su borrador y puede reintentar sin duplicarlo', async () => {
   const { campaign } = await (await send(form())).json()
   expect(campaign.status).toBe('Borrador')
@@ -273,6 +283,61 @@ test('rechaza cancelación de borradores, campañas ajenas, sesiones ausentes y 
   expect((await cancel(campaign.id, ownerCookie, 'https://otro.example')).status).toBe(403)
   expect((await cancel(999999)).status).toBe(404)
   expect(app.db.query('SELECT status FROM campaigns WHERE id = ?').get(campaign.id).status).toBe('Activa')
+})
+
+test('guarda aportes y acumula matemáticamente el total recaudado', async () => {
+  const { campaign } = await (await send(form())).json()
+  await activate(campaign.id)
+  const first = await contribute(campaign.id, '1000')
+  expect(first.status).toBe(201)
+  const firstResult = await first.json()
+  expect(firstResult.contribution.amount_cents).toBe(100000)
+  expect(firstResult.campaign.raised_cents).toBe(100000)
+  const second = await contribute(campaign.id, '500', otherCookie)
+  expect(second.status).toBe(201)
+  expect((await second.json()).campaign.raised_cents).toBe(150000)
+  expect(app.db.query('SELECT raised_cents FROM campaigns WHERE id = ?').get(campaign.id).raised_cents).toBe(150000)
+  const contributions = app.db.query('SELECT campaign_id, user_id, amount_cents FROM contributions WHERE campaign_id = ? ORDER BY id').all(campaign.id)
+  expect(contributions.map(row => row.amount_cents)).toEqual([100000, 50000])
+  expect(new Set(contributions.map(row => row.user_id)).size).toBe(2)
+})
+
+test('rechaza montos inválidos sin crear aportes ni modificar el progreso', async () => {
+  const { campaign } = await (await send(form())).json()
+  await activate(campaign.id)
+  for (const amount of ['', '0', '-1', 'texto', 'NaN', 'Infinity', '1e3', '1.5', '0.01', '0.001']) {
+    const response = await contribute(campaign.id, amount)
+    expect(response.status).toBe(422)
+    expect((await response.json()).error).toContain('entero de CLP')
+  }
+  expect(app.db.query('SELECT raised_cents FROM campaigns WHERE id = ?').get(campaign.id).raised_cents).toBe(0)
+  expect(app.db.query('SELECT COUNT(*) AS total FROM contributions WHERE campaign_id = ?').get(campaign.id).total).toBe(0)
+})
+
+test('solo acepta aportes en campañas activas y los bloquea después de cancelar', async () => {
+  const { campaign } = await (await send(form())).json()
+  expect((await contribute(campaign.id, '1000')).status).toBe(409)
+  expect((await contribute(campaign.id, '1000', otherCookie)).status).toBe(404)
+  await activate(campaign.id)
+  expect((await contribute(campaign.id, '1000', otherCookie)).status).toBe(201)
+  await cancel(campaign.id)
+  expect((await contribute(campaign.id, '1000')).status).toBe(409)
+  expect((await contribute(campaign.id, '1000', otherCookie)).status).toBe(404)
+  expect(app.db.query('SELECT raised_cents FROM campaigns WHERE id = ?').get(campaign.id).raised_cents).toBe(100000)
+})
+
+test('los aportes requieren sesión, origen autorizado y JSON válido', async () => {
+  const { campaign } = await (await send(form())).json()
+  await activate(campaign.id)
+  expect((await contribute(campaign.id, '1000', null)).status).toBe(401)
+  expect((await contribute(campaign.id, '1000', ownerCookie, 'https://otro.example')).status).toBe(403)
+  expect((await contribute(campaign.id, '1000', ownerCookie, 'http://localhost:5173', 'text/plain')).status).toBe(415)
+  const malformed = await app.fetch(new Request('http://localhost:3000/api/campaigns/' + campaign.id + '/contributions', {
+    method: 'POST', headers: { Origin: 'http://localhost:5173', Cookie: ownerCookie, 'Content-Type': 'application/json' }, body: '{',
+  }))
+  expect(malformed.status).toBe(400)
+  expect((await contribute(999999, '1000')).status).toBe(404)
+  expect(app.db.query('SELECT COUNT(*) AS total FROM contributions').get().total).toBe(0)
 })
 
 test('migra campañas antiguas sin perder sus datos y admite el estado Cancelada', async () => {

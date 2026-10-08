@@ -1,7 +1,7 @@
 <script setup>
 import { onUnmounted, ref, watch } from 'vue'
 import { requestApi } from '../api.js'
-import { formatDeadline, formatGoal } from '../../shared/campaign.js'
+import { contributionToCents, formatDeadline, formatGoal, fundingPercentage } from '../../shared/campaign.js'
 
 const props = defineProps({ campaignId: { type: String, required: true }, userId: { type: Number, required: true } })
 const emit = defineEmits(['session-expired', 'removed'])
@@ -13,6 +13,11 @@ const actionError = ref('')
 const actionNotice = ref('')
 const confirmingDelete = ref(false)
 const confirmingCancel = ref(false)
+const showingContribution = ref(false)
+const contributionAmount = ref('')
+const paymentProcessing = ref(false)
+const contributionError = ref('')
+const paymentNotice = ref('')
 let version = 0
 async function load() {
   const current = ++version
@@ -22,6 +27,11 @@ async function load() {
   actionNotice.value = ''
   confirmingDelete.value = false
   confirmingCancel.value = false
+  showingContribution.value = false
+  contributionAmount.value = ''
+  paymentProcessing.value = false
+  contributionError.value = ''
+  paymentNotice.value = ''
   campaign.value = null
   try {
     const result = await requestApi('/api/campaigns/' + props.campaignId)
@@ -78,6 +88,37 @@ async function deleteDraft() {
     else actionError.value = failure.message
   } finally { actionBusy.value = false }
 }
+async function contribute() {
+  if (paymentProcessing.value || campaign.value?.status !== 'Activa') return
+  if (contributionToCents(contributionAmount.value) === null) {
+    contributionError.value = 'Ingresa un monto entero de CLP mayor a 0.'
+    return
+  }
+  const current = version
+  paymentProcessing.value = true
+  contributionError.value = ''
+  paymentNotice.value = ''
+  const payment = requestApi('/api/campaigns/' + props.campaignId + '/contributions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount: contributionAmount.value }),
+  })
+  const [result] = await Promise.allSettled([
+    payment,
+    new Promise(resolve => window.setTimeout(resolve, 5000)),
+  ])
+  if (current !== version) return
+  paymentProcessing.value = false
+  if (result.status === 'rejected') {
+    if (result.reason.status === 401) emit('session-expired')
+    else contributionError.value = result.reason.message
+    return
+  }
+  campaign.value = result.value.campaign
+  contributionAmount.value = ''
+  showingContribution.value = false
+  paymentNotice.value = 'Pago exitoso. Tu aporte fue sumado a la campaña.'
+}
 watch(() => props.campaignId, load, { immediate: true })
 onUnmounted(() => { version++ })
 </script>
@@ -96,6 +137,7 @@ onUnmounted(() => { version++ })
       <p v-else class="home-lead">Esta campaña fue cancelada y ya no recibe aportes.</p>
       <p v-if="actionError" class="message error" role="alert">{{ actionError }}</p>
       <p v-if="actionNotice" class="message success" role="status">{{ actionNotice }}</p>
+      <p v-if="paymentNotice" class="message success payment-success" role="status"><strong>Pago exitoso</strong><span>Tu aporte fue sumado a la campaña.</span></p>
       <div v-if="campaign.owner_id === userId" class="campaign-management-actions">
         <button v-if="campaign.status === 'Borrador'" class="button-link" type="button" :disabled="actionBusy" @click="activate">{{ actionBusy ? 'Procesando…' : 'Activar campaña' }}</button>
         <button v-if="campaign.status === 'Borrador' && campaign.raised_cents === 0" class="danger-button" type="button" :disabled="actionBusy" @click="confirmingDelete = true; confirmingCancel = false">Eliminar campaña</button>
@@ -117,6 +159,31 @@ onUnmounted(() => { version++ })
           <button class="outline-button" type="button" :disabled="actionBusy" @click="confirmingDelete = false">Volver</button>
         </div>
       </section>
+      <section class="campaign-funding-summary" aria-labelledby="funding-title">
+        <div>
+          <h2 id="funding-title">Progreso de financiamiento</h2>
+          <p><strong>{{ formatGoal(campaign.raised_cents) }} CLP</strong> recaudados de {{ formatGoal(campaign.goal_cents) }} CLP</p>
+        </div>
+        <span>{{ fundingPercentage(campaign.raised_cents, campaign.goal_cents) }} % financiado</span>
+        <progress :value="Math.min(fundingPercentage(campaign.raised_cents, campaign.goal_cents), 100)" max="100" :aria-label="'Progreso de financiamiento de ' + campaign.title"></progress>
+      </section>
+      <div v-if="campaign.status === 'Activa'" class="contribution-area">
+        <button v-if="!showingContribution && !paymentProcessing" class="button-link" type="button" @click="showingContribution = true; contributionError = ''; paymentNotice = ''">Aportar</button>
+        <div v-if="paymentProcessing" class="payment-pending" role="status" aria-live="polite">
+          <span class="payment-spinner" aria-hidden="true"></span>
+          <strong>Confirmando pago…</strong>
+        </div>
+        <form v-else-if="showingContribution" class="contribution-form" @submit.prevent="contribute">
+          <label for="contribution-amount">Monto del aporte (CLP)
+            <input id="contribution-amount" v-model="contributionAmount" type="number" inputmode="numeric" min="1" step="1" required placeholder="Ej. 10000" />
+          </label>
+          <p v-if="contributionError" class="message error" role="alert">{{ contributionError }}</p>
+          <div class="confirmation-actions">
+            <button class="button-link" type="submit">Confirmar aporte</button>
+            <button class="outline-button" type="button" @click="showingContribution = false; contributionError = ''">Volver</button>
+          </div>
+        </form>
+      </div>
       <img :src="campaign.imageUrl" :alt="'Imagen de ' + campaign.title" class="summary-image" />
       <dl class="campaign-facts">
         <div><dt>Categoría</dt><dd>{{ campaign.category }}</dd></div>

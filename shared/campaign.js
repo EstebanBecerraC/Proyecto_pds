@@ -18,6 +18,13 @@ export function goalToCents(value) {
   return Number.isSafeInteger(cents) && cents > 0 ? cents : null
 }
 
+export function contributionToCents(value) {
+  const text = String(value ?? '').trim()
+  if (!/^\d+$/.test(text)) return null
+  const cents = Number(text) * 100
+  return Number.isSafeInteger(cents) && cents > 0 ? cents : null
+}
+
 export function validateCampaign(data, image, today = todayInChile()) {
   const errors = {}
   for (const field of ['title', 'description', 'category', 'goal', 'deadline']) {

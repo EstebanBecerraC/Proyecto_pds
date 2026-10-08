@@ -1,5 +1,5 @@
 import { createCatalog } from './catalog.js'
-import { goalToCents, validateCampaign } from '../shared/campaign.js'
+import { contributionToCents, goalToCents, validateCampaign } from '../shared/campaign.js'
 
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
 const fields = 'id, owner_id, title, description, category, goal_cents, raised_cents, deadline, status, created_at'
@@ -53,8 +53,34 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
     })()
   }
   db.exec('CREATE INDEX IF NOT EXISTS campaigns_owner ON campaigns(owner_id)')
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS contributions (
+      id INTEGER PRIMARY KEY,
+      campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE RESTRICT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+      amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS contributions_campaign ON contributions(campaign_id, id);
+    CREATE INDEX IF NOT EXISTS contributions_user ON contributions(user_id, id);
+  `)
 
   const catalog = createCatalog(db)
+  const saveContribution = db.transaction((campaignId, userId, amountCents) => {
+    const campaign = db.query(`SELECT ${fields} FROM campaigns
+      WHERE id = ? AND (owner_id = ? OR status = 'Activa')`).get(campaignId, userId)
+    if (!campaign) return { error: 'not-found' }
+    if (campaign.status !== 'Activa') return { error: 'inactive' }
+    const result = db.query('INSERT INTO contributions (campaign_id, user_id, amount_cents) VALUES (?, ?, ?)')
+      .run(campaignId, userId, amountCents)
+    db.query("UPDATE campaigns SET raised_cents = raised_cents + ? WHERE id = ? AND status = 'Activa'")
+      .run(amountCents, campaignId)
+    return {
+      contribution: db.query('SELECT id, campaign_id, user_id, amount_cents, created_at FROM contributions WHERE id = ?')
+        .get(result.lastInsertRowid),
+      campaign: db.query(`SELECT ${fields} FROM campaigns WHERE id = ?`).get(campaignId),
+    }
+  })
 
   return async function handle(request) {
     const user = getUser(request)
@@ -92,6 +118,26 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
         .run(user.id, data.title, data.description, data.category, bytes, image.type, goalToCents(data.goal), data.deadline, creationKey)
       const campaign = db.query(`SELECT ${fields} FROM campaigns WHERE owner_id = ? AND creation_key = ?`).get(user.id, creationKey)
       return json({ campaign: serialize(campaign) }, result.changes ? 201 : 200)
+    }
+    const contribution = path.match(/^\/api\/campaigns\/(\d+)\/contributions$/)
+    if (contribution && request.method === 'POST') {
+      if (!request.headers.get('content-type')?.startsWith('application/json'))
+        return json({ error: 'Se requiere contenido JSON.' }, 415)
+      let data
+      try {
+        const body = await request.text()
+        if (body.length > 1024) return json({ error: 'Solicitud demasiado grande.' }, 413)
+        data = JSON.parse(body)
+      } catch { return json({ error: 'Los datos enviados no son válidos.' }, 400) }
+      if (!data || typeof data !== 'object' || Array.isArray(data))
+        return json({ error: 'Los datos enviados no son válidos.' }, 400)
+      const amountCents = contributionToCents(data.amount)
+      if (amountCents === null)
+        return json({ error: 'El monto debe ser un número entero de CLP mayor a 0.' }, 422)
+      const saved = saveContribution(contribution[1], user.id, amountCents)
+      if (saved.error === 'not-found') return json({ error: 'Campaña no encontrada.' }, 404)
+      if (saved.error === 'inactive') return json({ error: 'Solo se puede aportar a campañas activas.' }, 409)
+      return json({ contribution: saved.contribution, campaign: serialize(saved.campaign) }, 201)
     }
     const activation = path.match(/^\/api\/campaigns\/(\d+)\/activate$/)
     if (activation && request.method === 'POST') {

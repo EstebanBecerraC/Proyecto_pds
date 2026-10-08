@@ -171,11 +171,24 @@ a:focus-visible { outline: 3px solid #70ac94; outline-offset: 5px; }
 .delete-confirmation h2 { margin-top: 0; font-size: 1.25rem; }
 .delete-confirmation p { color: #715454; line-height: 1.6; }
 .confirmation-actions { margin-top: 20px; }
+.campaign-funding-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px 24px; margin-top: 28px; padding: 24px; border: 1px solid #dce5d8; border-radius: 12px; background: #f6f9f2; }
+.campaign-funding-summary h2 { margin: 0 0 8px; font-size: 1.25rem; }
+.campaign-funding-summary p { margin: 0; color: #52675b; }
+.campaign-funding-summary > span { color: #216454; font-weight: 700; }
+.campaign-funding-summary progress { grid-column: 1 / -1; width: 100%; height: 10px; accent-color: #216454; }
+.contribution-area { margin-top: 18px; }
+.contribution-form { max-width: 520px; padding: 24px; border: 1px solid #dce5d8; border-radius: 12px; background: #fff; }
+.payment-pending { min-height: 112px; max-width: 520px; display: flex; align-items: center; justify-content: center; gap: 14px; border: 1px solid #bed0c5; border-radius: 12px; background: #f6f9f2; color: #216454; }
+.payment-spinner { width: 28px; height: 28px; border: 3px solid #bcd4c7; border-top-color: #216454; border-radius: 50%; animation: payment-spin .8s linear infinite; }
+.payment-success { display: flex; flex-direction: column; gap: 3px; }
+@keyframes payment-spin { to { transform: rotate(360deg); } }
 @media (max-width: 760px) {
   .campaign-heading { flex-direction: column; align-items: flex-start; }
   .campaign-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .form-columns, .campaign-facts { grid-template-columns: 1fr; }
   .campaign-form { padding: 24px 18px; }
+  .campaign-funding-summary { grid-template-columns: 1fr; }
+  .campaign-funding-summary progress { grid-column: 1; }
 }
 @media (max-width: 480px) {
   .campaign-grid { grid-template-columns: 1fr; }
