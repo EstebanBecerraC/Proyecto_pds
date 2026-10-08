@@ -59,7 +59,7 @@ async function save() {
 
 <template>
   <main class="home-content campaign-content">
-    <a class="back-link" href="#/home">← Volver a mis campañas</a>
+    <a class="back-link" href="#/my-campaigns">← Volver a mis campañas</a>
     <p class="badge">EL PRIMER PASO PARA TU IDEA</p>
     <h1>Crear una campaña</h1>
     <p class="home-lead">Cuéntanos qué quieres hacer. Tu campaña se guardará como borrador.</p>
@@ -106,7 +106,7 @@ async function save() {
             <p v-if="errors.deadline" id="error-deadline" class="field-error" role="alert">{{ errors.deadline }}</p>
           </div>
         </div>
-        <div class="form-actions"><a class="text-link" href="#/home">Cancelar</a><button class="primary" type="submit">{{ saving ? 'Guardando…' : 'Guardar borrador' }}</button></div>
+        <div class="form-actions"><a class="text-link" href="#/my-campaigns">Cancelar</a><button class="primary" type="submit">{{ saving ? 'Guardando…' : 'Guardar borrador' }}</button></div>
       </fieldset>
     </form>
   </main>
