@@ -96,19 +96,19 @@ El proyecto está pensado para funcionar en cualquier sistema operativo compatib
 
 Clona el repositorio de CrowdStarter:
 
-git clone https://github.com/EstebanBecerraC/Proyecto_pds.git
+- git clone https://github.com/EstebanBecerraC/Proyecto_pds.git
 
 
 Ingresa al directorio del proyecto:
 
-cd .\Proyecto_pds\
+- cd .\Proyecto_pds\
 
 
 ### 7.2. Instalar dependencias
 
 Ejecuta:
 
-bun install
+- bun install
 
 ## 8. Ejecución
 
@@ -116,13 +116,13 @@ CrowdStarter requiere ejecutar el servidor de la API y el servidor de desarrollo
 
 ### 8.1. Ejecutar la API
 
-bun run dev:server
+- bun run dev:server
 
 ### 8.2. Ejecutar el frontend
 
 En otra terminal:
 
-bun run dev
+- bun run dev
 
 
 ### 8.3. URLs de desarrollo
@@ -138,7 +138,7 @@ Una vez iniciados ambos servicios:
 
 Para ejecutar las pruebas unitarias:
 
-bun test
+- bun test
 
 
 ### 9.2. Tests end-to-end
@@ -150,7 +150,7 @@ El proyecto utiliza Cypress para realizar pruebas end-to-end.
 
 Para generar el build de producción:
 
-bun run build
+- bun run build
 
 
 ## 10. Uso básico
