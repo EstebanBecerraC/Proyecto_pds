@@ -179,6 +179,18 @@ function activate(id, cookie = ownerCookie, origin = 'http://localhost:5173') {
   }))
 }
 
+function cancel(id, cookie = ownerCookie, origin = 'http://localhost:5173') {
+  return app.fetch(new Request('http://localhost:3000/api/campaigns/' + id + '/cancel', {
+    method: 'POST', headers: { Origin: origin, ...(cookie ? { Cookie: cookie } : {}) },
+  }))
+}
+
+function remove(id, cookie = ownerCookie, origin = 'http://localhost:5173') {
+  return app.fetch(new Request('http://localhost:3000/api/campaigns/' + id, {
+    method: 'DELETE', headers: { Origin: origin, ...(cookie ? { Cookie: cookie } : {}) },
+  }))
+}
+
 test('el creador activa su borrador y puede reintentar sin duplicarlo', async () => {
   const { campaign } = await (await send(form())).json()
   expect(campaign.status).toBe('Borrador')
@@ -201,14 +213,76 @@ test('rechaza activación ajena, sin sesión o desde otro origen', async () => {
   expect((await (await get('/' + campaign.id)).json()).campaign.status).toBe('Borrador')
 })
 
-test('migra campañas antiguas sin perder sus datos y permite activarlas', async () => {
+test('el creador elimina físicamente un borrador sin aportes', async () => {
+  const { campaign } = await (await send(form())).json()
+  expect(app.db.query('SELECT id FROM campaigns WHERE id = ?').get(campaign.id)).toBeDefined()
+  const response = await remove(campaign.id)
+  expect(response.status).toBe(200)
+  expect((await response.json()).message).toContain('eliminada permanentemente')
+  expect(app.db.query('SELECT id FROM campaigns WHERE id = ?').get(campaign.id)).toBeNull()
+  expect((await get('/' + campaign.id)).status).toBe(404)
+  expect((await get('/' + campaign.id + '/image')).status).toBe(404)
+  expect((await (await get()).json()).campaigns).toEqual([])
+})
+
+test('impide eliminar campañas activas o borradores con aportes', async () => {
+  const { campaign: active } = await (await send(form({}, undefined, crypto.randomUUID()))).json()
+  await activate(active.id)
+  const { campaign: fundedDraft } = await (await send(form({ title: 'Borrador financiado' }, undefined, crypto.randomUUID()))).json()
+  app.db.query('UPDATE campaigns SET raised_cents = 100 WHERE id = ?').run(fundedDraft.id)
+  for (const id of [active.id, fundedDraft.id]) {
+    const response = await remove(id)
+    expect(response.status).toBe(409)
+    expect((await response.json()).error).toContain('borradores sin aportes')
+    expect(app.db.query('SELECT id FROM campaigns WHERE id = ?').get(id)).toBeDefined()
+  }
+})
+
+test('solo el creador autenticado y el origen permitido pueden eliminar el borrador', async () => {
+  const { campaign } = await (await send(form())).json()
+  expect((await remove(campaign.id, otherCookie)).status).toBe(404)
+  expect((await remove(campaign.id, null)).status).toBe(401)
+  expect((await remove(campaign.id, ownerCookie, 'https://otro.example')).status).toBe(403)
+  expect((await remove(999999)).status).toBe(404)
+  expect(app.db.query('SELECT id FROM campaigns WHERE id = ?').get(campaign.id)).toBeDefined()
+})
+
+test('el creador cancela una campaña activa y deja de ser pública', async () => {
+  const { campaign } = await (await send(form())).json()
+  await activate(campaign.id)
+  expect((await (await get('/catalog')).json()).campaigns.map(row => row.id)).toContain(campaign.id)
+  const response = await cancel(campaign.id)
+  expect(response.status).toBe(200)
+  expect((await response.json()).campaign.status).toBe('Cancelada')
+  expect(app.db.query('SELECT status FROM campaigns WHERE id = ?').get(campaign.id).status).toBe('Cancelada')
+  expect((await (await get('/catalog')).json()).campaigns.map(row => row.id)).not.toContain(campaign.id)
+  expect((await get('/' + campaign.id, otherCookie)).status).toBe(404)
+  expect((await get('/' + campaign.id + '/image', otherCookie)).status).toBe(404)
+  expect((await (await get('/' + campaign.id)).json()).campaign.status).toBe('Cancelada')
+  expect((await (await get()).json()).campaigns[0].status).toBe('Cancelada')
+  expect((await activate(campaign.id)).status).toBe(200)
+  expect(app.db.query('SELECT status FROM campaigns WHERE id = ?').get(campaign.id).status).toBe('Cancelada')
+})
+
+test('rechaza cancelación de borradores, campañas ajenas, sesiones ausentes y otros orígenes', async () => {
+  const { campaign } = await (await send(form())).json()
+  expect((await cancel(campaign.id)).status).toBe(409)
+  await activate(campaign.id)
+  expect((await cancel(campaign.id, otherCookie)).status).toBe(404)
+  expect((await cancel(campaign.id, null)).status).toBe(401)
+  expect((await cancel(campaign.id, ownerCookie, 'https://otro.example')).status).toBe(403)
+  expect((await cancel(999999)).status).toBe(404)
+  expect(app.db.query('SELECT status FROM campaigns WHERE id = ?').get(campaign.id).status).toBe('Activa')
+})
+
+test('migra campañas antiguas sin perder sus datos y admite el estado Cancelada', async () => {
   const { createAuth } = await import('./auth.js')
   const { createCampaignApi } = await import('./campaigns.js')
   const legacy = createAuth(':memory:')
   try {
     const cookie = await createUser(legacy, 'legacy@example.test')
     const oldSchema = app.db.query("SELECT sql FROM sqlite_master WHERE name = 'campaigns'").get().sql
-      .replace("CHECK(status IN ('Borrador', 'Activa'))", "CHECK(status = 'Borrador')")
+      .replace("CHECK(status IN ('Borrador', 'Activa', 'Cancelada'))", "CHECK(status = 'Borrador')")
     legacy.db.exec(oldSchema)
     legacy.db.query(`INSERT INTO campaigns
       (id, owner_id, title, description, category, image, image_type, goal_cents, deadline, creation_key)
@@ -221,8 +295,14 @@ test('migra campañas antiguas sin perder sus datos y permite activarlas', async
     }))
     expect(response.status).toBe(200)
     expect((await response.json()).campaign.status).toBe('Activa')
+    const cancellation = await handle(new Request('http://localhost:3000/api/campaigns/42/cancel', {
+      method: 'POST', headers: { Origin: 'http://localhost:5173', Cookie: cookie },
+    }))
+    expect(cancellation.status).toBe(200)
+    expect((await cancellation.json()).campaign.status).toBe('Cancelada')
     createCampaignApi(legacy.db, legacy.getUser)
-    expect(legacy.db.query('SELECT status FROM campaigns WHERE id = 42').get().status).toBe('Activa')
+    expect(legacy.db.query('SELECT status FROM campaigns WHERE id = 42').get().status).toBe('Cancelada')
+    expect(legacy.db.query("SELECT sql FROM sqlite_master WHERE name = 'campaigns'").get().sql).toContain("'Cancelada'")
     expect(legacy.db.query('PRAGMA foreign_key_check').all()).toEqual([])
   } finally { legacy.close() }
 })

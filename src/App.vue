@@ -126,7 +126,7 @@ onUnmounted(() => window.removeEventListener('hashchange', onHashChange))
   <MyCampaignsPage v-else-if="page === 'my-campaigns' && user" :user="user" :busy="busy" :error="error" @logout="logout" @session-expired="sessionExpired" />
   <MemberLayout v-else-if="user && page.startsWith('campaigns/')" :busy="busy" :error="error" @logout="logout">
     <CampaignForm v-if="page === 'campaigns/new'" @saved="campaign => navigate('campaigns/' + campaign.id, { replace: true })" @session-expired="sessionExpired" />
-    <CampaignSummary v-else :campaign-id="page.split('/')[1]" :user-id="user.id" @session-expired="sessionExpired" />
+    <CampaignSummary v-else :campaign-id="page.split('/')[1]" :user-id="user.id" @session-expired="sessionExpired" @removed="navigate('my-campaigns', { replace: true })" />
   </MemberLayout>
   <main v-else class="auth-layout">
     <section class="intro">

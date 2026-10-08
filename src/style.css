@@ -164,6 +164,13 @@ a:focus-visible { outline: 3px solid #70ac94; outline-offset: 5px; }
 .campaign-description { margin: 32px 0; }
 .campaign-description h2 { font-size: 1.5rem; }
 .campaign-description p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; color: #52675b; }
+.campaign-management-actions, .confirmation-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.danger-button { display: inline-flex; justify-content: center; align-items: center; min-height: 46px; border: 1px solid #c45151; border-radius: 7px; padding: 12px 20px; background: #fff; color: #a32d2d; font: inherit; font-size: .88rem; font-weight: 700; }
+.danger-button:hover:not(:disabled) { background: #fcebea; }
+.delete-confirmation { margin-top: 22px; padding: 24px; border: 1px solid #e7b7b4; border-radius: 12px; background: #fff7f6; }
+.delete-confirmation h2 { margin-top: 0; font-size: 1.25rem; }
+.delete-confirmation p { color: #715454; line-height: 1.6; }
+.confirmation-actions { margin-top: 20px; }
 @media (max-width: 760px) {
   .campaign-heading { flex-direction: column; align-items: flex-start; }
   .campaign-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -175,6 +182,7 @@ a:focus-visible { outline: 3px solid #70ac94; outline-offset: 5px; }
   .form-actions { flex-direction: column-reverse; align-items: stretch; text-align: center; }
 }
 .active-badge { color: #216454; background: #e5f2e9; }
+.cancelled-badge { color: #8b3434; background: #f7dfdd; }
 .catalog-count { color: #708078; font-size: .85rem; margin: 0 0 24px; }
 .campaign-search { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; margin: -8px 0 24px; }
 .campaign-search input { min-width: 0; }

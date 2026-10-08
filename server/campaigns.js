@@ -2,7 +2,7 @@ import { createCatalog } from './catalog.js'
 import { goalToCents, validateCampaign } from '../shared/campaign.js'
 
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
-const fields = 'id, owner_id, title, description, category, goal_cents, deadline, status, created_at'
+const fields = 'id, owner_id, title, description, category, goal_cents, raised_cents, deadline, status, created_at'
 const serialize = row => ({ ...row, imageUrl: '/api/campaigns/' + row.id + '/image' })
 
 function matchesImage(bytes, type) {
@@ -27,7 +27,7 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
       image_type TEXT NOT NULL,
       goal_cents INTEGER NOT NULL CHECK(goal_cents > 0),
       deadline TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'Borrador' CHECK(status IN ('Borrador', 'Activa')),
+      status TEXT NOT NULL DEFAULT 'Borrador' CHECK(status IN ('Borrador', 'Activa', 'Cancelada')),
       raised_cents INTEGER NOT NULL DEFAULT 0 CHECK(raised_cents >= 0),
       creation_key TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -36,7 +36,7 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
   `
   db.exec(schema)
   const existingSchema = db.query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'campaigns'").get().sql
-  if (/CHECK\s*\(\s*status\s*=\s*'Borrador'\s*\)/i.test(existingSchema)) {
+  if (!existingSchema.includes("'Cancelada'")) {
     // SQLite requires rebuilding a table to change a CHECK constraint.
     // The transaction preserves all existing campaign data and IDs.
     const hasRaised = db.query('PRAGMA table_info(campaigns)').all().some(column => column.name === 'raised_cents')
@@ -60,7 +60,7 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
     const user = getUser(request)
     if (!user) return json({ error: 'Debes iniciar sesión.' }, 401)
     const path = new URL(request.url).pathname
-    if (request.method === 'POST' && request.headers.get('origin') !== origin)
+    if (['POST', 'DELETE'].includes(request.method) && request.headers.get('origin') !== origin)
       return json({ error: 'Origen no permitido.' }, 403)
     if (path === '/api/campaigns/catalog' && request.method === 'GET') return catalog(request)
     if (path === '/api/campaigns' && request.method === 'GET') {
@@ -100,7 +100,25 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
       const campaign = db.query(`SELECT ${fields} FROM campaigns WHERE id = ? AND owner_id = ?`).get(activation[1], user.id)
       return campaign ? json({ campaign: serialize(campaign) }) : json({ error: 'Campaña no encontrada.' }, 404)
     }
+    const cancellation = path.match(/^\/api\/campaigns\/(\d+)\/cancel$/)
+    if (cancellation && request.method === 'POST') {
+      const campaign = db.query(`SELECT ${fields} FROM campaigns WHERE id = ? AND owner_id = ?`).get(cancellation[1], user.id)
+      if (!campaign) return json({ error: 'Campaña no encontrada.' }, 404)
+      if (campaign.status !== 'Activa') return json({ error: 'Solo se pueden cancelar campañas activas.' }, 409)
+      db.query("UPDATE campaigns SET status = 'Cancelada' WHERE id = ? AND owner_id = ? AND status = 'Activa'")
+        .run(cancellation[1], user.id)
+      return json({ campaign: serialize({ ...campaign, status: 'Cancelada' }) })
+    }
     const match = path.match(/^\/api\/campaigns\/(\d+)(\/image)?$/)
+    if (match && !match[2] && request.method === 'DELETE') {
+      const campaign = db.query('SELECT status, raised_cents FROM campaigns WHERE id = ? AND owner_id = ?').get(match[1], user.id)
+      if (!campaign) return json({ error: 'Campaña no encontrada.' }, 404)
+      if (campaign.status !== 'Borrador' || campaign.raised_cents !== 0)
+        return json({ error: 'Solo se pueden eliminar borradores sin aportes.' }, 409)
+      db.query("DELETE FROM campaigns WHERE id = ? AND owner_id = ? AND status = 'Borrador' AND raised_cents = 0")
+        .run(match[1], user.id)
+      return json({ message: 'Campaña eliminada permanentemente.' })
+    }
     if (match && request.method === 'GET') {
       if (match[2]) {
         const image = db.query("SELECT image, image_type FROM campaigns WHERE id = ? AND (owner_id = ? OR status = 'Activa')").get(match[1], user.id)

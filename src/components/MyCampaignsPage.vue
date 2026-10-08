@@ -41,7 +41,7 @@ onMounted(load)
       <div v-else class="campaign-grid">
         <a v-for="campaign in campaigns" :key="campaign.id" :href="'#/campaigns/' + campaign.id" class="campaign-tile">
           <img :src="campaign.imageUrl" :alt="'Imagen de ' + campaign.title" loading="lazy" />
-          <div class="tile-copy"><span class="draft-badge" :class="{ 'active-badge': campaign.status === 'Activa' }">{{ campaign.status }}</span><h3>{{ campaign.title }}</h3><p>{{ campaign.category }}</p><strong>{{ formatGoal(campaign.goal_cents) }} CLP</strong><span class="tile-action">Ver resumen →</span></div>
+          <div class="tile-copy"><span class="draft-badge" :class="{ 'active-badge': campaign.status === 'Activa', 'cancelled-badge': campaign.status === 'Cancelada' }">{{ campaign.status }}</span><h3>{{ campaign.title }}</h3><p>{{ campaign.category }}</p><strong>{{ formatGoal(campaign.goal_cents) }} CLP</strong><span class="tile-action">Ver resumen →</span></div>
         </a>
       </div>
       <p class="session-caption">Sesión iniciada como <strong>{{ user.email }}</strong></p>
