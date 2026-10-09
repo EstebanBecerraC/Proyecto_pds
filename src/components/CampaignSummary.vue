@@ -19,9 +19,33 @@ const contributionAmount = ref('')
 const paymentProcessing = ref(false)
 const contributionError = ref('')
 const paymentNotice = ref('')
+const contributions = ref([])
+const historyLoading = ref(true)
+const historyError = ref('')
 let version = 0
+let historyVersion = 0
+async function loadContributions() {
+  const current = version
+  const currentHistory = ++historyVersion
+  historyLoading.value = true
+  historyError.value = ''
+  try {
+    const result = await requestApi('/api/campaigns/' + props.campaignId + '/contributions')
+    if (current === version && currentHistory === historyVersion) contributions.value = result.contributions
+  } catch (failure) {
+    if (current !== version || currentHistory !== historyVersion) return
+    if (failure.status === 401) emit('session-expired')
+    else historyError.value = failure.message
+  } finally {
+    if (current === version && currentHistory === historyVersion) historyLoading.value = false
+  }
+}
 async function load() {
   const current = ++version
+  historyVersion++
+  contributions.value = []
+  historyLoading.value = true
+  historyError.value = ''
   loading.value = true
   error.value = ''
   actionError.value = ''
@@ -36,7 +60,9 @@ async function load() {
   campaign.value = null
   try {
     const result = await requestApi('/api/campaigns/' + props.campaignId)
-    if (current === version) campaign.value = result.campaign
+    if (current !== version) return
+    campaign.value = result.campaign
+    loadContributions()
   } catch (failure) {
     if (current !== version) return
     if (failure.status === 401) emit('session-expired')
@@ -119,6 +145,7 @@ async function contribute() {
   contributionAmount.value = ''
   showingContribution.value = false
   paymentNotice.value = 'Pago exitoso. Tu aporte fue sumado a la campaña.'
+  await loadContributions()
 }
 watch(() => props.campaignId, load, { immediate: true })
 onUnmounted(() => { version++ })
@@ -197,6 +224,20 @@ onUnmounted(() => { version++ })
         <div><dt>Días restantes</dt><dd>{{ remainingDays === 1 ? '1 día' : remainingDays + ' días' }}</dd></div>
       </dl>
       <section class="campaign-description"><h2>Acerca del proyecto</h2><p>{{ campaign.description }}</p></section>
+      <section class="campaign-activity" aria-labelledby="activity-title" :aria-busy="historyLoading">
+        <h2 id="activity-title">Historial de aportes</h2>
+        <p v-if="historyLoading" role="status">Cargando aportes…</p>
+        <div v-else-if="historyError">
+          <p class="message error" role="alert">{{ historyError }}</p>
+          <button class="outline-button" type="button" @click="loadContributions">Reintentar historial</button>
+        </div>
+        <ul v-else-if="contributions.length" class="campaign-contributions">
+          <li v-for="contribution in contributions" :key="contribution.id">
+            <strong>{{ contribution.contributor_name }}</strong> aportó <strong>{{ formatGoal(contribution.amount_cents) }}</strong>
+          </li>
+        </ul>
+        <p v-else class="contributions-empty" role="status">{{ campaign.status === 'Activa' ? 'Esta campaña aún no tiene aportes. ¡Sé la primera persona en aportar!' : 'Esta campaña aún no tiene aportes.' }}</p>
+      </section>
       <a class="button-link" :href="campaign.owner_id === userId ? '#/my-campaigns' : '#/home'">{{ campaign.owner_id === userId ? 'Volver a mis campañas' : 'Volver al catálogo' }}</a>
     </article>
   </main>

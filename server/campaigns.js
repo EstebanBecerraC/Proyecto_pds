@@ -120,6 +120,16 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
       return json({ campaign: serialize(campaign) }, result.changes ? 201 : 200)
     }
     const contribution = path.match(/^\/api\/campaigns\/(\d+)\/contributions$/)
+    if (contribution && request.method === 'GET') {
+      const campaign = db.query("SELECT id FROM campaigns WHERE id = ? AND (owner_id = ? OR status = 'Activa')")
+        .get(contribution[1], user.id)
+      if (!campaign) return json({ error: 'Campaña no encontrada.' }, 404)
+      const contributions = db.query(`SELECT contributions.id, users.name AS contributor_name,
+        contributions.amount_cents, contributions.created_at
+        FROM contributions JOIN users ON users.id = contributions.user_id
+        WHERE contributions.campaign_id = ? ORDER BY contributions.id DESC`).all(campaign.id)
+      return json({ contributions })
+    }
     if (contribution && request.method === 'POST') {
       if (!request.headers.get('content-type')?.startsWith('application/json'))
         return json({ error: 'Se requiere contenido JSON.' }, 415)

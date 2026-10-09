@@ -166,6 +166,12 @@ a:focus-visible { outline: 3px solid #70ac94; outline-offset: 5px; }
 .campaign-description { margin: 32px 0; }
 .campaign-description h2 { font-size: 1.5rem; }
 .campaign-description p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; color: #52675b; }
+.campaign-activity { margin: 32px 0; padding-top: 24px; border-top: 1px solid #dce5d8; }
+.campaign-activity h2 { font-size: 1.5rem; }
+.campaign-contributions { list-style: none; padding: 0; margin: 20px 0 0; }
+.campaign-contributions li { padding: 16px 0; border-bottom: 1px solid #e3e8e1; line-height: 1.6; color: #52675b; overflow-wrap: anywhere; }
+.campaign-contributions strong { color: #216454; }
+.contributions-empty { padding: 22px; border: 1px dashed #bdcdb9; border-radius: 12px; background: #f0f4e9; color: #52675b; line-height: 1.6; }
 .campaign-management-actions, .confirmation-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
 .danger-button { display: inline-flex; justify-content: center; align-items: center; min-height: 46px; border: 1px solid #c45151; border-radius: 7px; padding: 12px 20px; background: #fff; color: #a32d2d; font: inherit; font-size: .88rem; font-weight: 700; }
 .danger-button:hover:not(:disabled) { background: #fcebea; }
