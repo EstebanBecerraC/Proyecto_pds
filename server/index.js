@@ -2,7 +2,9 @@ import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { createApp } from './app.js'
 
-const databasePath = resolve(import.meta.dir, '../data/app.sqlite')
+const databasePath = process.env.DATABASE_PATH
+  ? resolve(process.env.DATABASE_PATH)
+  : resolve(import.meta.dir, '../data/app.sqlite')
 mkdirSync(dirname(databasePath), { recursive: true })
 const auth = createApp(databasePath, {
   origin: process.env.APP_ORIGIN || 'http://localhost:5173',

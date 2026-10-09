@@ -25,3 +25,6 @@ dist-ssr
 
 data/
 .env
+
+cypress/screenshots/
+cypress/videos/

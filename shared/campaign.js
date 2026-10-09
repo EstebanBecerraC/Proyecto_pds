@@ -25,7 +25,7 @@ export function contributionToCents(value) {
   return Number.isSafeInteger(cents) && cents > 0 ? cents : null
 }
 
-export function validateCampaign(data, image, today = todayInChile()) {
+export function validateCampaign(data, image, today = todayInChile(), { requireImage = true } = {}) {
   const errors = {}
   for (const field of ['title', 'description', 'category', 'goal', 'deadline']) {
     if (typeof data[field] !== 'string' || !data[field].trim()) errors[field] = 'Campo requerido'
@@ -41,7 +41,10 @@ export function validateCampaign(data, image, today = todayInChile()) {
       errors.deadline = 'Ingresa una fecha válida.'
     else if (data.deadline <= today) errors.deadline = 'La fecha límite debe ser posterior a hoy.'
   }
-  if (!image || image.size === 0) errors.image = 'Campo requerido'
+  if (!image) {
+    if (requireImage) errors.image = 'Campo requerido'
+  }
+  else if (image.size === 0) errors.image = 'Campo requerido'
   else if (!IMAGE_TYPES.includes(image.type)) errors.image = 'Selecciona una imagen JPG, PNG o WebP.'
   else if (image.size > MAX_IMAGE_BYTES) errors.image = 'La imagen no puede superar los 5 MB.'
   return errors

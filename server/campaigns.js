@@ -86,7 +86,7 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
     const user = getUser(request)
     if (!user) return json({ error: 'Debes iniciar sesión.' }, 401)
     const path = new URL(request.url).pathname
-    if (['POST', 'DELETE'].includes(request.method) && request.headers.get('origin') !== origin)
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method) && request.headers.get('origin') !== origin)
       return json({ error: 'Origen no permitido.' }, 403)
     if (path === '/api/campaigns/catalog' && request.method === 'GET') return catalog(request)
     if (path === '/api/campaigns' && request.method === 'GET') {
@@ -156,6 +156,37 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
       return json({ campaign: serialize({ ...campaign, status: 'Cancelada' }) })
     }
     const match = path.match(/^\/api\/campaigns\/(\d+)(\/image)?$/)
+    if (match && !match[2] && request.method === 'PUT') {
+      const campaign = db.query('SELECT status FROM campaigns WHERE id = ? AND owner_id = ?').get(match[1], user.id)
+      if (!campaign) return json({ error: 'Campaña no encontrada.' }, 404)
+      if (campaign.status !== 'Borrador') return json({ error: 'Solo se pueden editar campañas en Borrador.' }, 409)
+      let form
+      try { form = await request.formData() }
+      catch { return json({ error: 'El formulario enviado no es válido.' }, 400) }
+      const data = Object.fromEntries(['title', 'description', 'category', 'goal', 'deadline'].map(field => {
+        const value = form.get(field)
+        return [field, typeof value === 'string' ? value.trim() : '']
+      }))
+      const file = form.get('image')
+      if (form.has('image') && !(file instanceof Blob))
+        return json({ error: 'Revisa los campos indicados.', errors: { image: 'Selecciona un archivo de imagen válido.' } }, 422)
+      const image = file instanceof Blob ? file : null
+      const errors = validateCampaign(data, image, undefined, { requireImage: false })
+      if (Object.keys(errors).length) return json({ error: 'Revisa los campos indicados.', errors }, 422)
+      const bytes = image ? new Uint8Array(await image.arrayBuffer()) : null
+      if (image && !matchesImage(bytes, image.type))
+        return json({ error: 'Revisa los campos indicados.', errors: { image: 'El archivo no corresponde a una imagen JPG, PNG o WebP válida.' } }, 422)
+      // Check the state again when writing: activation may occur while reading the form/image.
+      const result = db.query(`UPDATE campaigns SET
+        title = ?, description = ?, category = ?, goal_cents = ?, deadline = ?,
+        image = COALESCE(?, image), image_type = COALESCE(?, image_type)
+        WHERE id = ? AND owner_id = ? AND status = 'Borrador'`)
+        .run(data.title, data.description, data.category, goalToCents(data.goal), data.deadline,
+          bytes, image?.type ?? null, match[1], user.id)
+      if (!result.changes) return json({ error: 'La campaña ya no está disponible para edición. Vuelve a consultar su estado.' }, 409)
+      const updated = db.query(`SELECT ${fields} FROM campaigns WHERE id = ? AND owner_id = ?`).get(match[1], user.id)
+      return json({ campaign: serialize(updated) })
+    }
     if (match && !match[2] && request.method === 'DELETE') {
       const campaign = db.query('SELECT status, raised_cents FROM campaigns WHERE id = ? AND owner_id = ?').get(match[1], user.id)
       if (!campaign) return json({ error: 'Campaña no encontrada.' }, 404)

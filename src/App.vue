@@ -5,12 +5,13 @@ import HomePage from './components/HomePage.vue'
 import MyCampaignsPage from './components/MyCampaignsPage.vue'
 import MemberLayout from './components/MemberLayout.vue'
 import CampaignForm from './components/CampaignForm.vue'
+import CampaignEdit from './components/CampaignEdit.vue'
 import CampaignSummary from './components/CampaignSummary.vue'
 
 const allowedPages = ['landing', 'login', 'register', 'home', 'my-campaigns']
 const readPage = () => {
   const value = window.location.hash.replace(/^#\/?/, '') || 'landing'
-  return allowedPages.includes(value) || /^campaigns\/(new|[1-9]\d*)$/.test(value) ? value : 'landing'
+  return allowedPages.includes(value) || /^campaigns\/(new|[1-9]\d*(\/edit)?)$/.test(value) ? value : 'landing'
 }
 const page = ref(readPage())
 const user = ref(null)
@@ -91,6 +92,12 @@ function sessionExpired() {
   notice.value = 'Tu sesión terminó. Inicia sesión nuevamente.'
 }
 
+function campaignSaved(campaign) {
+  const edited = page.value.endsWith('/edit')
+  navigate('campaigns/' + campaign.id, { replace: true })
+  if (edited) notice.value = 'Los cambios de la campaña se guardaron correctamente.'
+}
+
 async function logout() {
   busy.value = true
   error.value = ''
@@ -125,8 +132,9 @@ onUnmounted(() => window.removeEventListener('hashchange', onHashChange))
   <HomePage v-else-if="page === 'home' && user" :user="user" :busy="busy" :error="error" @logout="logout" @session-expired="sessionExpired" />
   <MyCampaignsPage v-else-if="page === 'my-campaigns' && user" :user="user" :busy="busy" :error="error" @logout="logout" @session-expired="sessionExpired" />
   <MemberLayout v-else-if="user && page.startsWith('campaigns/')" :busy="busy" :error="error" @logout="logout">
-    <CampaignForm v-if="page === 'campaigns/new'" @saved="campaign => navigate('campaigns/' + campaign.id, { replace: true })" @session-expired="sessionExpired" />
-    <CampaignSummary v-else :campaign-id="page.split('/')[1]" :user-id="user.id" @session-expired="sessionExpired" @removed="navigate('my-campaigns', { replace: true })" />
+    <CampaignForm v-if="page === 'campaigns/new'" @saved="campaignSaved" @session-expired="sessionExpired" />
+    <CampaignEdit v-else-if="page.endsWith('/edit')" :campaign-id="page.split('/')[1]" :user-id="user.id" @saved="campaignSaved" @session-expired="sessionExpired" />
+    <CampaignSummary v-else :campaign-id="page.split('/')[1]" :user-id="user.id" :notice="notice" @session-expired="sessionExpired" @removed="navigate('my-campaigns', { replace: true })" />
   </MemberLayout>
   <main v-else class="auth-layout">
     <section class="intro">

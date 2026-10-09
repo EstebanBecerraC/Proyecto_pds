@@ -1,10 +1,18 @@
 <script setup>
-import { nextTick, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue'
 import { CATEGORIES, IMAGE_TYPES, MAX_IMAGE_BYTES, todayInChile, validateCampaign } from '../../shared/campaign.js'
 import { requestApi } from '../api.js'
 
+const props = defineProps({ campaign: { type: Object, default: null } })
 const emit = defineEmits(['saved', 'session-expired'])
-const form = reactive({ title: '', description: '', category: '', goal: '', deadline: '' })
+const editing = computed(() => !!props.campaign)
+const backUrl = computed(() => editing.value ? '#/campaigns/' + props.campaign.id : '#/my-campaigns')
+const form = reactive({
+  title: props.campaign?.title ?? '', description: props.campaign?.description ?? '',
+  category: props.campaign?.category ?? '',
+  goal: props.campaign ? String(props.campaign.goal_cents / 100) : '',
+  deadline: props.campaign?.deadline ?? '',
+})
 const image = ref(null)
 const preview = ref('')
 const errors = ref({})
@@ -12,6 +20,7 @@ const message = ref('')
 const submitted = ref(false)
 const saving = ref(false)
 const creationKey = crypto.randomUUID()
+const validationErrors = () => validateCampaign(form, image.value, undefined, { requireImage: !editing.value })
 
 function chooseImage(event) {
   image.value = event.target.files?.[0] || null
@@ -21,7 +30,7 @@ function chooseImage(event) {
 }
 onUnmounted(() => { if (preview.value) URL.revokeObjectURL(preview.value) })
 watch([form, image], () => {
-  if (submitted.value) errors.value = validateCampaign(form, image.value)
+  if (submitted.value) errors.value = validationErrors()
 }, { deep: true })
 
 async function focusError() {
@@ -33,7 +42,7 @@ async function save() {
   if (saving.value) return
   submitted.value = true
   message.value = ''
-  errors.value = validateCampaign(form, image.value)
+  errors.value = validationErrors()
   if (Object.keys(errors.value).length) {
     await focusError()
     return
@@ -42,9 +51,10 @@ async function save() {
   try {
     const body = new FormData()
     for (const [field, value] of Object.entries(form)) body.append(field, value.trim())
-    body.append('image', image.value)
-    body.append('creationKey', creationKey)
-    const result = await requestApi('/api/campaigns', { method: 'POST', body })
+    if (image.value) body.append('image', image.value)
+    if (!editing.value) body.append('creationKey', creationKey)
+    const path = editing.value ? '/api/campaigns/' + props.campaign.id : '/api/campaigns'
+    const result = await requestApi(path, { method: editing.value ? 'PUT' : 'POST', body })
     emit('saved', result.campaign)
   } catch (failure) {
     if (failure.status === 401) emit('session-expired')
@@ -59,12 +69,12 @@ async function save() {
 
 <template>
   <main class="home-content campaign-content">
-    <a class="back-link" href="#/my-campaigns">← Volver a mis campañas</a>
-    <p class="badge">EL PRIMER PASO PARA TU IDEA</p>
-    <h1>Crear una campaña</h1>
-    <p class="home-lead">Cuéntanos qué quieres hacer. Tu campaña se guardará como borrador.</p>
+    <a class="back-link" :href="backUrl">{{ editing ? '← Volver a la campaña' : '← Volver a mis campañas' }}</a>
+    <p class="badge">{{ editing ? 'AJUSTA TU IDEA' : 'EL PRIMER PASO PARA TU IDEA' }}</p>
+    <h1>{{ editing ? 'Editar campaña' : 'Crear una campaña' }}</h1>
+    <p class="home-lead">{{ editing ? 'Actualiza los datos de tu campaña. Se mantendrá como borrador.' : 'Cuéntanos qué quieres hacer. Tu campaña se guardará como borrador.' }}</p>
     <form class="campaign-form" novalidate @submit.prevent="save">
-      <p class="required-note">Todos los campos son obligatorios.</p>
+      <p class="required-note">{{ editing ? 'Todos los campos son obligatorios, excepto reemplazar la imagen.' : 'Todos los campos son obligatorios.' }}</p>
       <p v-if="message" class="message error" role="alert">{{ message }}</p>
       <fieldset :disabled="saving">
         <div class="form-field">
@@ -87,10 +97,11 @@ async function save() {
         </div>
         <div class="form-field">
           <label for="campaign-image">Imagen de la campaña</label>
-          <input id="campaign-image" type="file" accept="image/jpeg,image/png,image/webp" required :aria-invalid="!!errors.image" :aria-describedby="errors.image ? 'image-help error-image' : 'image-help'" @change="chooseImage" />
-          <p id="image-help" class="field-help">JPG, PNG o WebP. Máximo 5 MB.</p>
+          <input id="campaign-image" type="file" accept="image/jpeg,image/png,image/webp" :required="!editing" :aria-invalid="!!errors.image" :aria-describedby="errors.image ? 'image-help error-image' : 'image-help'" @change="chooseImage" />
+          <p id="image-help" class="field-help">JPG, PNG o WebP. Máximo 5 MB. {{ editing ? 'Si no seleccionas otra imagen, se conservará la actual.' : '' }}</p>
           <p v-if="errors.image" id="error-image" class="field-error" role="alert">{{ errors.image }}</p>
           <img v-if="preview" :src="preview" class="upload-preview" alt="Vista previa de la imagen de la campaña" />
+          <img v-else-if="editing" :src="campaign.imageUrl" class="upload-preview" alt="Imagen actual de la campaña" />
         </div>
         <div class="form-columns">
           <div class="form-field">
@@ -106,7 +117,7 @@ async function save() {
             <p v-if="errors.deadline" id="error-deadline" class="field-error" role="alert">{{ errors.deadline }}</p>
           </div>
         </div>
-        <div class="form-actions"><a class="text-link" href="#/my-campaigns">Cancelar</a><button class="primary" type="submit">{{ saving ? 'Guardando…' : 'Guardar borrador' }}</button></div>
+        <div class="form-actions"><a class="text-link" :href="backUrl">Cancelar</a><button class="primary" type="submit">{{ saving ? 'Guardando…' : editing ? 'Guardar cambios' : 'Guardar borrador' }}</button></div>
       </fieldset>
     </form>
   </main>

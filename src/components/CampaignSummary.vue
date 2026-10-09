@@ -3,7 +3,7 @@ import { onUnmounted, ref, watch } from 'vue'
 import { requestApi } from '../api.js'
 import { contributionToCents, formatDeadline, formatGoal, fundingPercentage } from '../../shared/campaign.js'
 
-const props = defineProps({ campaignId: { type: String, required: true }, userId: { type: Number, required: true } })
+const props = defineProps({ campaignId: { type: String, required: true }, userId: { type: Number, required: true }, notice: { type: String, default: '' } })
 const emit = defineEmits(['session-expired', 'removed'])
 const campaign = ref(null)
 const loading = ref(true)
@@ -137,8 +137,10 @@ onUnmounted(() => { version++ })
       <p v-else class="home-lead">Esta campaña fue cancelada y ya no recibe aportes.</p>
       <p v-if="actionError" class="message error" role="alert">{{ actionError }}</p>
       <p v-if="actionNotice" class="message success" role="status">{{ actionNotice }}</p>
+      <p v-if="notice" class="message success" role="status">{{ notice }}</p>
       <p v-if="paymentNotice" class="message success payment-success" role="status"><strong>Pago exitoso</strong><span>Tu aporte fue sumado a la campaña.</span></p>
       <div v-if="campaign.owner_id === userId" class="campaign-management-actions">
+        <a v-if="campaign.status === 'Borrador' && !actionBusy" class="outline-button" :href="'#/campaigns/' + campaign.id + '/edit'">Editar campaña</a>
         <button v-if="campaign.status === 'Borrador'" class="button-link" type="button" :disabled="actionBusy" @click="activate">{{ actionBusy ? 'Procesando…' : 'Activar campaña' }}</button>
         <button v-if="campaign.status === 'Borrador' && campaign.raised_cents === 0" class="danger-button" type="button" :disabled="actionBusy" @click="confirmingDelete = true; confirmingCancel = false">Eliminar campaña</button>
         <button v-if="campaign.status === 'Activa'" class="danger-button" type="button" :disabled="actionBusy" @click="confirmingCancel = true; confirmingDelete = false">Cancelar Campaña</button>
