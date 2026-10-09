@@ -203,7 +203,9 @@ export function createCampaignApi(db, getUser, { origin = 'http://localhost:5173
           'Content-Type': image.image_type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
         } }) : json({ error: 'Campaña no encontrada.' }, 404)
       }
-      const campaign = db.query(`SELECT ${fields} FROM campaigns WHERE id = ? AND (owner_id = ? OR status = 'Activa')`).get(match[1], user.id)
+      const campaign = db.query(`SELECT ${fields},
+        (SELECT name FROM users WHERE users.id = campaigns.owner_id) AS creator_name
+        FROM campaigns WHERE id = ? AND (owner_id = ? OR status = 'Activa')`).get(match[1], user.id)
       return campaign ? json({ campaign: serialize(campaign) }) : json({ error: 'Campaña no encontrada.' }, 404)
     }
     return json({ error: 'Ruta no encontrada.' }, 404)

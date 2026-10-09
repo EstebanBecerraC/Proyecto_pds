@@ -1,11 +1,12 @@
 <script setup>
-import { onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { requestApi } from '../api.js'
-import { contributionToCents, formatDeadline, formatGoal, fundingPercentage } from '../../shared/campaign.js'
+import { contributionToCents, daysRemaining, formatDeadline, formatGoal, fundingPercentage } from '../../shared/campaign.js'
 
 const props = defineProps({ campaignId: { type: String, required: true }, userId: { type: Number, required: true }, notice: { type: String, default: '' } })
 const emit = defineEmits(['session-expired', 'removed'])
 const campaign = ref(null)
+const remainingDays = computed(() => campaign.value ? daysRemaining(campaign.value.deadline) : null)
 const loading = ref(true)
 const error = ref('')
 const actionBusy = ref(false)
@@ -49,7 +50,7 @@ async function activate() {
   actionError.value = ''
   try {
     const result = await requestApi('/api/campaigns/' + props.campaignId + '/activate', { method: 'POST' })
-    if (current === version) campaign.value = result.campaign
+    if (current === version) campaign.value = { ...campaign.value, ...result.campaign }
   } catch (failure) {
     if (current !== version) return
     if (failure.status === 401) emit('session-expired')
@@ -65,7 +66,7 @@ async function cancelCampaign() {
   try {
     const result = await requestApi('/api/campaigns/' + props.campaignId + '/cancel', { method: 'POST' })
     if (current !== version) return
-    campaign.value = result.campaign
+    campaign.value = { ...campaign.value, ...result.campaign }
     confirmingCancel.value = false
     actionNotice.value = 'La campaña fue cancelada y ya no acepta nuevos aportes.'
   } catch (failure) {
@@ -114,7 +115,7 @@ async function contribute() {
     else contributionError.value = result.reason.message
     return
   }
-  campaign.value = result.value.campaign
+  campaign.value = { ...campaign.value, ...result.value.campaign }
   contributionAmount.value = ''
   showingContribution.value = false
   paymentNotice.value = 'Pago exitoso. Tu aporte fue sumado a la campaña.'
@@ -129,12 +130,14 @@ onUnmounted(() => { version++ })
     <p v-if="loading" role="status">Cargando campaña…</p>
     <div v-else-if="error"><p class="message error" role="alert">{{ error }}</p><button class="outline-button" @click="load">Reintentar</button></div>
     <article v-else-if="campaign" class="campaign-summary">
-      <p class="badge">RESUMEN DE LA CAMPAÑA</p>
+      <p class="badge">DETALLE DE LA CAMPAÑA</p>
       <span class="draft-badge" :class="{ 'active-badge': campaign.status === 'Activa', 'cancelled-badge': campaign.status === 'Cancelada' }" role="status">{{ campaign.status }}</span>
       <h1>{{ campaign.title }}</h1>
+      <p class="campaign-creator">Creada por <strong>{{ campaign.creator_name }}</strong></p>
       <p v-if="campaign.status === 'Borrador'" class="home-lead">Tu campaña está guardada como borrador.</p>
       <p v-else-if="campaign.status === 'Activa'" class="home-lead">Esta campaña está activa.</p>
-      <p v-else class="home-lead">Esta campaña fue cancelada y ya no recibe aportes.</p>
+      <p v-else-if="campaign.status === 'Cancelada'" class="home-lead">Esta campaña fue cancelada y ya no recibe aportes.</p>
+      <p v-else class="home-lead">Esta campaña no recibe aportes.</p>
       <p v-if="actionError" class="message error" role="alert">{{ actionError }}</p>
       <p v-if="actionNotice" class="message success" role="status">{{ actionNotice }}</p>
       <p v-if="notice" class="message success" role="status">{{ notice }}</p>
@@ -170,12 +173,12 @@ onUnmounted(() => { version++ })
         <progress :value="Math.min(fundingPercentage(campaign.raised_cents, campaign.goal_cents), 100)" max="100" :aria-label="'Progreso de financiamiento de ' + campaign.title"></progress>
       </section>
       <div v-if="campaign.status === 'Activa'" class="contribution-area">
-        <button v-if="!showingContribution && !paymentProcessing" class="button-link" type="button" @click="showingContribution = true; contributionError = ''; paymentNotice = ''">Aportar</button>
+        <button class="button-link" type="button" :disabled="paymentProcessing" :aria-expanded="showingContribution" aria-controls="contribution-form" @click="showingContribution = true; contributionError = ''; paymentNotice = ''">Aportar</button>
         <div v-if="paymentProcessing" class="payment-pending" role="status" aria-live="polite">
           <span class="payment-spinner" aria-hidden="true"></span>
           <strong>Confirmando pago…</strong>
         </div>
-        <form v-else-if="showingContribution" class="contribution-form" @submit.prevent="contribute">
+        <form v-else-if="showingContribution" id="contribution-form" class="contribution-form" @submit.prevent="contribute">
           <label for="contribution-amount">Monto del aporte (CLP)
             <input id="contribution-amount" v-model="contributionAmount" type="number" inputmode="numeric" min="1" step="1" required placeholder="Ej. 10000" />
           </label>
@@ -191,6 +194,7 @@ onUnmounted(() => { version++ })
         <div><dt>Categoría</dt><dd>{{ campaign.category }}</dd></div>
         <div><dt>Meta de financiamiento</dt><dd>{{ formatGoal(campaign.goal_cents) }} CLP</dd></div>
         <div><dt>Fecha límite</dt><dd>{{ formatDeadline(campaign.deadline) }}</dd></div>
+        <div><dt>Días restantes</dt><dd>{{ remainingDays === 1 ? '1 día' : remainingDays + ' días' }}</dd></div>
       </dl>
       <section class="campaign-description"><h2>Acerca del proyecto</h2><p>{{ campaign.description }}</p></section>
       <a class="button-link" :href="campaign.owner_id === userId ? '#/my-campaigns' : '#/home'">{{ campaign.owner_id === userId ? 'Volver a mis campañas' : 'Volver al catálogo' }}</a>

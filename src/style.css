@@ -157,6 +157,8 @@ a:focus-visible { outline: 3px solid #70ac94; outline-offset: 5px; }
 .tile-action { display: block; color: #216454; font-size: .85rem; margin-top: 24px; }
 .draft-badge { display: inline-block; border-radius: 20px; padding: 6px 12px; color: #805d21; background: #f7ebca; font-size: .78rem; font-weight: 600; }
 .campaign-summary h1 { max-width: 100%; }
+.campaign-summary h1, .campaign-creator { overflow-wrap: anywhere; }
+.campaign-creator { color: #52675b; line-height: 1.6; }
 .summary-image { width: 100%; max-height: 460px; object-fit: contain; background: #edf2e6; border-radius: 12px; margin-top: 20px; }
 .campaign-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding: 28px 0; border-bottom: 1px solid #dce5d8; }
 .campaign-facts dt { color: #708078; font-size: .8rem; margin-bottom: 8px; }

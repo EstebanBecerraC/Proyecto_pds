@@ -57,6 +57,16 @@ export const formatDeadline = value => new Intl.DateTimeFormat('es-CL', {
   day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
 }).format(new Date(value + 'T00:00:00Z'))
 
+export function daysRemaining(deadline, today = todayInChile()) {
+  // Compare calendar dates in UTC so Chile's daylight saving changes do not add or remove a day.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(deadline) || !/^\d{4}-\d{2}-\d{2}$/.test(today)) return null
+  const end = new Date(deadline + 'T00:00:00Z')
+  const start = new Date(today + 'T00:00:00Z')
+  if (!Number.isFinite(end.getTime()) || !Number.isFinite(start.getTime())) return null
+  if (end.toISOString().slice(0, 10) !== deadline || start.toISOString().slice(0, 10) !== today) return null
+  return Math.max(0, Math.round((end - start) / 86_400_000))
+}
+
 export function fundingPercentage(raisedCents, goalCents) {
   if (!(goalCents > 0) || !(raisedCents >= 0)) return 0
   return Math.round((raisedCents / goalCents) * 10000) / 100
