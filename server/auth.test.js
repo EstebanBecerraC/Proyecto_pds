@@ -20,7 +20,14 @@ async function login() {
 }
 
 test('registra un usuario y guarda solo el hash de su contraseña', async () => {
-  expect((await request('register', credentials)).status).toBe(201)
+  const response = await request('register', credentials)
+  expect(response.status).toBe(201)
+  const user = { id: 1, name: credentials.name, email: credentials.email }
+  expect(await response.json()).toEqual({ user })
+  const cookie = response.headers.get('set-cookie')
+  expect(cookie).toContain('HttpOnly')
+  expect(cookie).toContain('SameSite=Lax')
+  expect(await (await request('me', undefined, cookie.split(';')[0])).json()).toEqual({ user })
   const row = auth.db.query('SELECT * FROM users').get()
   expect(row.password_hash).not.toBe(credentials.password)
   expect(await Bun.password.verify(credentials.password, row.password_hash)).toBe(true)
@@ -28,8 +35,14 @@ test('registra un usuario y guarda solo el hash de su contraseña', async () => 
 
 test('rechaza correos duplicados sin distinguir mayúsculas o espacios', async () => {
   await request('register', credentials)
-  expect((await request('register', { ...credentials, email: ' PERSONA@example.com ' })).status).toBe(409)
+  const response = await request('register', { ...credentials, email: ' PERSONA@example.com ' })
+  expect(response.status).toBe(409)
+  expect(await response.json()).toEqual({
+    error: 'Este correo ya está registrado', fields: { email: 'Este correo ya está registrado' },
+  })
+  expect(response.headers.get('set-cookie')).toBeNull()
   expect(auth.db.query('SELECT COUNT(*) AS count FROM users').get().count).toBe(1)
+  expect(auth.db.query('SELECT COUNT(*) AS count FROM sessions').get().count).toBe(1)
 })
 
 test('valida nombre, correo y contraseña en el servidor', async () => {
@@ -54,6 +67,59 @@ test('no revela si una cuenta existe al rechazar credenciales', async () => {
   expect(wrong.status).toBe(401)
   expect(unknown.status).toBe(401)
   expect(await wrong.json()).toEqual(await unknown.json())
+})
+
+test('HU00A: rechaza contraseñas incorrectas cortas y largas con el mismo mensaje genérico', async () => {
+  await request('register', credentials)
+  for (const email of [credentials.email, 'otra@example.com', 'correo-invalido']) {
+    for (const password of ['123', 'incorrecta-123', 'x'.repeat(129)]) {
+      const response = await request('login', { email, password })
+      expect(response.status).toBe(401)
+      expect(await response.json()).toEqual({ error: 'Correo o contraseña incorrectos' })
+      expect(response.headers.get('set-cookie')).toBeNull()
+    }
+  }
+  expect(auth.db.query('SELECT COUNT(*) AS count FROM sessions').get().count).toBe(1)
+})
+
+test('HU00A: indica cada campo obligatorio ausente sin generar una sesión', async () => {
+  for (const [data, fields] of [
+    [{}, { email: 'Campo obligatorio', password: 'Campo obligatorio' }],
+    [{ email: '  ', password: '123' }, { email: 'Campo obligatorio' }],
+    [{ email: credentials.email, password: '' }, { password: 'Campo obligatorio' }],
+  ]) {
+    const response = await request('login', data)
+    expect(response.status).toBe(400)
+    expect((await response.json()).fields).toEqual(fields)
+    expect(response.headers.get('set-cookie')).toBeNull()
+  }
+  expect(auth.db.query('SELECT COUNT(*) AS count FROM sessions').get().count).toBe(0)
+})
+
+test('HU00B: el registro reemplaza la sesión anterior y normaliza el correo', async () => {
+  const first = await request('register', credentials)
+  const oldCookie = first.headers.get('set-cookie').split(';')[0]
+  const response = await request('register', { ...credentials, name: 'Otra persona', email: ' OTRA@EXAMPLE.COM ' }, oldCookie)
+  expect(response.status).toBe(201)
+  const cookie = response.headers.get('set-cookie').split(';')[0]
+  expect(cookie).not.toBe(oldCookie)
+  expect((await request('me', undefined, oldCookie)).status).toBe(401)
+  expect((await (await request('me', undefined, cookie)).json()).user.email).toBe('otra@example.com')
+  expect(auth.db.query('SELECT COUNT(*) AS count FROM sessions').get().count).toBe(1)
+})
+
+test('HU00B: revierte el registro si falla la creación de la sesión', async () => {
+  auth.db.exec(`CREATE TRIGGER reject_session BEFORE INSERT ON sessions
+    BEGIN SELECT RAISE(ABORT, 'Fallo de sesión simulado'); END;`)
+  const originalError = console.error
+  console.error = () => {}
+  let response
+  try { response = await request('register', credentials) }
+  finally { console.error = originalError }
+  expect(response.status).toBe(500)
+  expect(response.headers.get('set-cookie')).toBeNull()
+  expect(auth.db.query('SELECT COUNT(*) AS count FROM users').get().count).toBe(0)
+  expect(auth.db.query('SELECT COUNT(*) AS count FROM sessions').get().count).toBe(0)
 })
 
 test('rechaza sesiones ausentes, inventadas y vencidas', async () => {
@@ -98,8 +164,8 @@ test('conserva usuarios y sesiones al volver a abrir SQLite', async () => {
       headers: { Origin: 'http://localhost:5173', 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
       body: data ? JSON.stringify(data) : undefined,
     }))
-    expect((await send('register', credentials)).status).toBe(201)
-    const response = await send('login', credentials)
+    const response = await send('register', credentials)
+    expect(response.status).toBe(201)
     const cookie = response.headers.get('set-cookie').split(';')[0]
     persistent.close()
     persistent = createAuth(path)

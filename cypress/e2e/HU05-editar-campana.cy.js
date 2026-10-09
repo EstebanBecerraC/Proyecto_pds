@@ -25,7 +25,7 @@ function register(user) {
   cy.get('#password').type(user.password, { log: false })
   cy.get('#confirmation').type(user.password, { log: false })
   cy.contains('button', /^Crear cuenta$/).click()
-  return cy.location('hash').should('eq', '#/login')
+  return cy.location('hash').should('eq', '#/home')
 }
 
 // Consulta la API real desde el navegador y verifica su respuesta.

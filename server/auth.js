@@ -1,4 +1,5 @@
 import { Database } from 'bun:sqlite'
+import { INCORRECT_CREDENTIALS, REGISTERED_EMAIL, isValidEmail, validateAuth } from '../shared/auth.js'
 
 const SESSION_SECONDS = 60 * 60 * 24 * 7
 const tokenHash = token => new Bun.CryptoHasher('sha256').update(token).digest('hex')
@@ -40,7 +41,7 @@ export function createAuth(databasePath, { origin = 'http://localhost:5173', sec
       FROM sessions JOIN users ON users.id = sessions.user_id
       WHERE sessions.token_hash = ? AND sessions.expires_at > ?`).get(tokenHash(token), Date.now()) : null
   }
-  function session(user, oldToken) {
+  function session(user, oldToken, status = 200) {
     const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, '0')).join('')
     db.transaction(() => {
       db.query('DELETE FROM sessions WHERE expires_at <= ?').run(Date.now())
@@ -48,7 +49,7 @@ export function createAuth(databasePath, { origin = 'http://localhost:5173', sec
       db.query('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
         .run(tokenHash(token), user.id, Date.now() + SESSION_SECONDS * 1000)
     })()
-    return json({ user: publicUser(user) }, 200, { 'Set-Cookie': cookie(token) })
+    return json({ user: publicUser(user) }, status, { 'Set-Cookie': cookie(token) })
   }
 
   async function handle(request, ip = 'local') {
@@ -86,24 +87,25 @@ export function createAuth(databasePath, { origin = 'http://localhost:5173', sec
       return json({ error: 'Los datos enviados no son válidos.' }, 400)
     const email = typeof data.email === 'string' ? data.email.trim().toLowerCase() : ''
     const password = data.password
-    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      return json({ error: 'Ingresa un correo válido.' }, 400)
-    if (typeof password !== 'string' || password.length < 8 || password.length > 128)
-      return json({ error: 'La contraseña debe tener entre 8 y 128 caracteres.' }, 400)
+    const registering = path === '/api/auth/register'
+    const fields = validateAuth(data, { registering })
+    if (Object.keys(fields).length) return json({ error: 'Revisa los campos indicados.', fields }, 400)
 
-    if (path === '/api/auth/register') {
-      const name = typeof data.name === 'string' ? data.name.trim() : ''
-      if (name.length < 2 || name.length > 80)
-        return json({ error: 'El nombre debe tener entre 2 y 80 caracteres.' }, 400)
+    if (registering) {
+      const name = data.name.trim()
       const hash = await Bun.password.hash(password, { algorithm: 'argon2id' })
-      const result = db.query('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?) ON CONFLICT(email) DO NOTHING')
-        .run(name, email, hash)
-      if (!result.changes) return json({ error: 'Ya existe una cuenta con ese correo.' }, 409)
-      return json({ message: 'Cuenta creada. Ya puedes iniciar sesión.' }, 201)
+      // Account and session are committed together; a failed session leaves no account behind.
+      return db.transaction(() => {
+        const result = db.query('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?) ON CONFLICT(email) DO NOTHING')
+          .run(name, email, hash)
+        if (!result.changes) return json({ error: REGISTERED_EMAIL, fields: { email: REGISTERED_EMAIL } }, 409)
+        return session({ id: Number(result.lastInsertRowid), name, email }, token, 201)
+      })()
     }
+    if (!isValidEmail(email) || password.length > 128) return json({ error: INCORRECT_CREDENTIALS }, 401)
     const user = db.query('SELECT * FROM users WHERE email = ?').get(email)
     const valid = await Bun.password.verify(password, user?.password_hash || dummyHash)
-    if (!user || !valid) return json({ error: 'Correo o contraseña incorrectos.' }, 401)
+    if (!user || !valid) return json({ error: INCORRECT_CREDENTIALS }, 401)
     return session(user, token)
   }
 
