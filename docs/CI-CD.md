@@ -45,3 +45,19 @@ exitoso; no convierte una prueba fallida en exitosa.
 
 Debian 13 x86_64, Java Temurin 21.0.13, Node.js 22.23.4, Bun 1.4.2 y Git 2.47.3.
 La etapa Preparar Cypress muestra su version exacta en cada ejecucion.
+
+## Correccion de los escenarios E2E
+
+Los helpers de autenticacion borran todas las cookies y recargan la aplicacion
+antes de navegar al login o registro. La navegacion por hash puede conservar
+el usuario Vue en memoria aunque se hayan borrado las cookies.
+
+Se utiliza un PNG real en cypress/fixtures/campana.png y se evita interceptar
+los cuerpos multipart de creacion y edicion: al reproducir el fallo, la
+interceptacion alteraba bytes binarios de la imagen. Las comprobaciones de
+guardado se realizan mediante la ruta de detalle, la confirmacion visible
+y las consultas a la API real.
+
+Validacion local: Cypress 16.1.1, Electron headless, API Bun con SQLite temporal
+y frontend compilado con Vite preview: 6 escenarios aprobados, 0 fallidos.
+La comprobacion final en el agente Debian de Azure sigue pendiente.
