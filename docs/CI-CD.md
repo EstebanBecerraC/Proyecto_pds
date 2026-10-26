@@ -34,13 +34,23 @@ La notificacion final incluye resultado, trabajo, commit y enlace a Jenkins.
 Un error de notificacion se registra y puede marcar como inestable un build
 exitoso; no convierte una prueba fallida en exitosa.
 
-## Validacion pendiente en Azure
+## Validacion realizada en Azure
 
-- Ejecutar el pipeline desde SCM y comprobar todos los escenarios Cypress.
-- Probar fallo controlado, reportes y aviso a Discord; revertir el fallo.
-- Validar publicacion real de estados en GitHub con la credencial configurada.
-- Tras el merge, verificar el disparo automatico sobre develop.
+- Pipeline desde SCM: 105 pruebas Bun y 6 escenarios Cypress aprobados.
+- Build de Vue generado correctamente.
+- Ejecucion #4: fallo controlado, commit 82529d2, estado failure en GitHub.
+- Ejecucion #5: recuperacion, commit 58f74ef, estado success en GitHub.
+- Ambas ejecuciones se iniciaron tras publicar cambios en feature/ci-cd.
+- El equipo confirmo la recepcion de ambos avisos en Discord.
+- La etapa temporal fue retirada; no se modifico develop.
 
+Evidencias:
+- Fallo: https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/4/
+- Recuperacion: https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/5/
+- El historial se limita a 15 ejecuciones: guardar las capturas de estas evidencias.
+
+Pendiente: integrar el Jenkinsfile a develop, cambiar la rama configurada y
+comprobar el disparo automatico de un cambio real en develop.
 ## Herramientas comprobadas en el agente
 
 Debian 13 x86_64, Java Temurin 21.0.13, Node.js 22.23.4, Bun 1.4.2 y Git 2.47.3.
@@ -60,7 +70,7 @@ y las consultas a la API real.
 
 Validacion local: Cypress 16.1.1, Electron headless, API Bun con SQLite temporal
 y frontend compilado con Vite preview: 6 escenarios aprobados, 0 fallidos.
-La comprobacion final en el agente Debian de Azure sigue pendiente.
+La ejecucion posterior en el agente Debian de Azure tambien fue exitosa.
 
 ## Estados de commits en GitHub
 
@@ -83,3 +93,57 @@ estado recibido cuando existe un problema de red o de credenciales.
 
 La publicacion requiere validacion real en Jenkins y GitHub con la credencial
 configurada. Los permisos de red del panel siguen aplicandose al enlace Details.
+
+## Infraestructura y acceso
+
+- VM Ubuntu Server 24.04 LTS en Azure, North Central US, tamano B2als_v2.
+- Controlador Jenkins en Docker, con cero ejecutores y volumen jenkins_home.
+- Agente Docker independiente, etiqueta crowdstarter y un ejecutor.
+- Caddy recibe HTTP/HTTPS y administra el certificado del subdominio DuckDNS.
+- URL: https://crowdstarter-jenkins.duckdns.org/
+- Puerto 8080 publicado solo en 127.0.0.1; no exponerlo en Azure.
+- Puertos 80 y 443 permiten trafico publico; SSH 22 permanece limitado a la IP
+  publica del administrador y requiere clave privada.
+- El acceso por IP en Caddy se retiro por decision del equipo: el login puede
+  abrirse desde cualquier red. El equipo usa una cuenta administradora compartida.
+- Comprobar en Seguridad de Jenkins que el registro publico y la lectura anonima
+  esten desactivados. Verificar en incognito que los trabajos requieren login.
+- El webhook /github-webhook/ valida el secreto compartido; GitHub no usa
+  la cuenta administradora ni la clave SSH.
+- La aplicacion se levanta durante las pruebas; generar dist no implica
+  desplegar la aplicacion publicamente de manera permanente.
+
+Flujo: GitHub push -> Caddy HTTPS -> Jenkins -> agente -> pruebas/build ->
+reportes y artefactos -> estado en GitHub y aviso en Discord.
+
+## Iniciar y usar Jenkins
+
+1. Iniciar vm-jenkins desde Azure si esta detenida.
+2. Abrir la URL HTTPS e iniciar sesion.
+3. Los contenedores tienen restart: unless-stopped. Si fueron detenidos
+   manualmente o no arrancan, conectarse por SSH y ejecutar:
+
+```bash
+cd ~/jenkins
+sudo docker compose -f compose.yaml -f compose.agent.yaml -f compose.tools.yaml -f compose.web.yaml up -d
+sudo docker compose -f compose.yaml -f compose.agent.yaml -f compose.tools.yaml -f compose.web.yaml ps
+```
+
+Abrir crowdstarter-ci -> Construir ahora para una ejecucion manual.
+Revisar Salida de consola, Resultados de pruebas y Artefactos.
+Los archivos Compose, Dockerfile del agente, agent.env y Caddyfile estan en
+~/jenkins de la VM. agent.env contiene un secreto y no debe subirse al repositorio.
+
+## Pausa y reactivacion
+
+- Detener y desasignar la VM desde Azure durante las semanas de pausa;
+  no eliminar la VM ni su disco. El disco y ciertos recursos de red siguen
+  consumiendo credito aunque no haya computo activo.
+- No ejecutar docker compose down -v: eliminaria los volumenes persistentes.
+- Revisar el saldo de Azure y la fecha de caducidad del token GitHub.
+- Al reactivar, comprobar la IP publica. Si cambio, actualizar DuckDNS.
+- Si cambio la IP del administrador, actualizar la regla SSH de Azure.
+- Verificar HTTPS, agente online y ejecutar manualmente el pipeline.
+- Mantener una copia segura de la configuracion y del volumen jenkins_home
+  antes de eliminar recursos. Esa copia puede contener credenciales y no
+  debe publicarse en GitHub.
