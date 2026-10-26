@@ -38,7 +38,7 @@ exitoso; no convierte una prueba fallida en exitosa.
 
 - Ejecutar el pipeline desde SCM y comprobar todos los escenarios Cypress.
 - Probar fallo controlado, reportes y aviso a Discord; revertir el fallo.
-- Configurar credencial y publicacion de estados en GitHub (aun no implementada).
+- Validar publicacion real de estados en GitHub con la credencial configurada.
 - Tras el merge, verificar el disparo automatico sobre develop.
 
 ## Herramientas comprobadas en el agente
@@ -61,3 +61,25 @@ y las consultas a la API real.
 Validacion local: Cypress 16.1.1, Electron headless, API Bun con SQLite temporal
 y frontend compilado con Vite preview: 6 escenarios aprobados, 0 fallidos.
 La comprobacion final en el agente Debian de Azure sigue pendiente.
+
+## Estados de commits en GitHub
+
+Crear un token fine-grained del propietario del repositorio, limitado a
+Proyecto_pds, con Commit statuses: Read and write. Guardarlo en Jenkins como
+Secret text con ID github-commit-status. Metadata de lectura es automatico.
+No se requieren permisos de escritura de codigo ni de administracion.
+
+El pipeline publica pending tras obtener el codigo y el estado final despues
+de procesar los reportes y artefactos. El contexto es ci/jenkins/crowdstarter.
+El SHA se obtiene con git rev-parse HEAD para asociar el resultado al commit
+realmente probado, aunque la rama avance durante la ejecucion.
+SUCCESS publica success; FAILURE y UNSTABLE publican failure; ABORTED y
+NOT_BUILT publican error. El enlace apunta a BUILD_URL y requiere Jenkins URL HTTPS.
+
+Un error al publicar el estado queda visible en consola. Si ocurre al inicio,
+el pipeline falla; si ocurre al finalizar, puede marcar un build exitoso como
+inestable, sin ocultar un fallo previo. GitHub puede conservar el ultimo
+estado recibido cuando existe un problema de red o de credenciales.
+
+La publicacion requiere validacion real en Jenkins y GitHub con la credencial
+configurada. Los permisos de red del panel siguen aplicandose al enlace Details.

@@ -21,6 +21,15 @@ pipeline {
                 sh 'mkdir -p reports'
             }
         }
+        stage('Estado pendiente en GitHub') {
+            steps {
+                withCredentials([string(credentialsId: 'github-commit-status', variable: 'GITHUB_STATUS_TOKEN')]) {
+                    withEnv(['CI_RESULT=PENDING']) {
+                        sh 'node scripts/github-status.mjs'
+                    }
+                }
+            }
+        }
         stage('Instalar dependencias') {
             steps {
                 sh 'bun install --frozen-lockfile'
@@ -63,6 +72,14 @@ pipeline {
         }
         cleanup {
             script {
+                // Publicar el resultado del commit exacto obtenido por checkout scm.
+                catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                    withCredentials([string(credentialsId: 'github-commit-status', variable: 'GITHUB_STATUS_TOKEN')]) {
+                        withEnv(["CI_RESULT=${currentBuild.currentResult}"]) {
+                            sh 'node scripts/github-status.mjs'
+                        }
+                    }
+                }
                 // Un fallo de Discord queda visible sin reemplazar el resultado de las pruebas.
                 catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
                     withCredentials([string(credentialsId: 'discord-webhook', variable: 'DISCORD_WEBHOOK')]) {
