@@ -201,3 +201,14 @@ Desde allí pueden:
 - Wiki: Link_Aqui
 - Release: Link_Aqui
 - Documentación detallada: Link_Aqui
+
+## Integracion continua - Entrega 2
+
+El pipeline de Jenkins ejecuta las pruebas Bun, compila el frontend y ejecuta
+Cypress con una base SQLite temporal. Publica reportes y artefactos, actualiza
+el estado del commit en GitHub y envia notificaciones a Discord.
+
+- [Configuracion, operacion y evidencias de CI/CD](docs/CI-CD.md)
+- [Jenkins](https://crowdstarter-jenkins.duckdns.org/) (requiere autenticacion)
+
+La configuracion se valida en feature/ci-cd antes de integrarse a develop.
