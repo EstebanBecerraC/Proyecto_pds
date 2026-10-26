@@ -30,6 +30,11 @@ pipeline {
                 }
             }
         }
+        stage('Validacion temporal de fallo') {
+            steps {
+                sh 'echo "Fallo controlado para validar GitHub y Discord"; exit 1'
+            }
+        }
         stage('Instalar dependencias') {
             steps {
                 sh 'bun install --frozen-lockfile'
