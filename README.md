@@ -197,10 +197,9 @@ Desde allí pueden:
 ## Enlaces
 
 - Repositorio: https://github.com/EstebanBecerraC/Proyecto_pds.git
-- Video de presentación/demostración: Link_Aqui
-- Wiki: Link_Aqui
-- Release: Link_Aqui
-- Documentación detallada: Link_Aqui
+- Video capsula: https://youtu.be/O6EkOwl1mQY
+- Wiki: https://github.com/EstebanBecerraC/Proyecto_pds/wiki
+- Release: https://github.com/EstebanBecerraC/Proyecto_pds/releases
 
 ## Integracion continua - Entrega 2
 

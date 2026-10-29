@@ -1,9 +1,11 @@
 import { createAuth } from './auth.js'
 import { createCampaignApi } from './campaigns.js'
+import { createProfileApi } from './profile.js'
 
 export function createApp(databasePath, options = {}) {
   const auth = createAuth(databasePath, options)
   const campaigns = createCampaignApi(auth.db, auth.getUser, options)
+  const profile = createProfileApi(auth.db, auth.getUser, options)
   return {
     db: auth.db,
     close: auth.close,
@@ -11,6 +13,7 @@ export function createApp(databasePath, options = {}) {
       try {
         const path = new URL(request.url).pathname
         if (path === '/api/campaigns' || path.startsWith('/api/campaigns/')) return await campaigns(request)
+        if (path === '/api/profile') return await profile(request)
         return await auth.fetch(request, ip)
       } catch (error) {
         console.error('Error de la API:', error)

@@ -10,6 +10,7 @@ defineEmits(['logout'])
       <nav class="header-actions" aria-label="Navegación de usuario">
         <a class="text-link" href="#/home">Inicio</a>
         <a class="text-link" href="#/my-campaigns">Mis campañas</a>
+        <a class="text-link" href="#/profile">Mi perfil</a>
         <button class="outline-button" :disabled="busy" @click="$emit('logout')">{{ busy ? 'Cerrando sesión…' : 'Cerrar sesión' }}</button>
       </nav>
     </header>
