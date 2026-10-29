@@ -215,6 +215,11 @@ a:focus-visible { outline: 3px solid #70ac94; outline-offset: 5px; }
 .profile-danger h2 { margin-top: 0; font-size: 1.35rem; }
 .profile-danger > p { color: #715454; line-height: 1.6; }
 .profile-danger .delete-confirmation { padding: 0; border: 0; }
+.delete-confirmation-label { display: grid; justify-items: center; gap: 12px; margin-top: 22px; text-align: center; color: #5f4141; font-weight: 600; }
+.delete-confirmation-instruction { line-height: 1.5; }
+.delete-confirmation-phrase { display: inline-block; padding: 8px 18px; border: 2px solid #a32d2d; border-radius: 8px; background: #fff; color: #a32d2d; font-size: 1.25rem; letter-spacing: .06em; }
+.delete-confirmation-label input { width: 100%; max-width: 360px; text-align: center; }
+.profile-danger .confirmation-actions { justify-content: center; }
 .catalog-count { color: #708078; font-size: .85rem; margin: 0 0 24px; }
 .campaign-search { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; margin: -8px 0 24px; }
 .campaign-search input { min-width: 0; }

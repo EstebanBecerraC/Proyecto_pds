@@ -142,8 +142,10 @@ onMounted(load)
         <button v-if="!confirmingRemoval" class="danger-button" type="button" :disabled="saving" @click="confirmingRemoval = true">Eliminar mi cuenta</button>
         <div v-else class="delete-confirmation">
           <p>Esta acción cerrará tu sesión y no podrás volver a acceder a la cuenta.</p>
-          <label for="delete-account-confirmation">Escribe <strong>entiendo</strong> para confirmar
-            <input id="delete-account-confirmation" v-model="removalConfirmation" type="text" autocomplete="off" />
+          <label class="delete-confirmation-label" for="delete-account-confirmation">
+            <span id="delete-confirmation-instruction" class="delete-confirmation-instruction">Escribe la siguiente palabra para confirmar:</span>
+            <strong class="delete-confirmation-phrase">entiendo</strong>
+            <input id="delete-account-confirmation" v-model="removalConfirmation" type="text" autocomplete="off" placeholder="Escribe la palabra aquí" aria-describedby="delete-confirmation-instruction" />
           </label>
           <div class="confirmation-actions">
             <button class="outline-button" type="button" :disabled="removing" @click="cancelRemoval">Volver</button>
