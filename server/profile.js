@@ -68,6 +68,11 @@ export function createProfileApi(db, getUser, { origin = 'http://localhost:5173'
     }
 
     if (request.method === 'DELETE') {
+      const parsed = await readJson(request)
+      if (parsed.response) return parsed.response
+      if (parsed.data.confirmation !== 'entiendo')
+        return json({ error: 'Escribe entiendo para confirmar la eliminación de la cuenta.' }, 422)
+
       const removed = db.transaction(() => {
         const active = db.query("SELECT 1 FROM campaigns WHERE owner_id = ? AND status = 'Activa' LIMIT 1").get(user.id)
         if (active) return false

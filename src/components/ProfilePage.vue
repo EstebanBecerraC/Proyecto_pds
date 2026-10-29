@@ -9,6 +9,7 @@ const loading = ref(true)
 const saving = ref(false)
 const removing = ref(false)
 const confirmingRemoval = ref(false)
+const removalConfirmation = ref('')
 const error = ref('')
 const notice = ref('')
 const errors = ref({})
@@ -62,11 +63,15 @@ async function save() {
 }
 
 async function remove() {
-  if (removing.value) return
+  if (saving.value || removing.value || removalConfirmation.value !== 'entiendo') return
   removing.value = true
   error.value = ''
   try {
-    await requestApi('/api/profile', { method: 'DELETE' })
+    await requestApi('/api/profile', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirmation: removalConfirmation.value }),
+    })
     emit('deleted')
   } catch (failure) {
     if (failure.status === 401) emit('session-expired')
@@ -74,7 +79,13 @@ async function remove() {
   } finally {
     removing.value = false
     confirmingRemoval.value = false
+    removalConfirmation.value = ''
   }
+}
+
+function cancelRemoval() {
+  confirmingRemoval.value = false
+  removalConfirmation.value = ''
 }
 
 onMounted(load)
@@ -131,9 +142,12 @@ onMounted(load)
         <button v-if="!confirmingRemoval" class="danger-button" type="button" :disabled="saving" @click="confirmingRemoval = true">Eliminar mi cuenta</button>
         <div v-else class="delete-confirmation">
           <p>Esta acción cerrará tu sesión y no podrás volver a acceder a la cuenta.</p>
+          <label for="delete-account-confirmation">Escribe <strong>entiendo</strong> para confirmar
+            <input id="delete-account-confirmation" v-model="removalConfirmation" type="text" autocomplete="off" />
+          </label>
           <div class="confirmation-actions">
-            <button class="outline-button" type="button" :disabled="removing" @click="confirmingRemoval = false">Volver</button>
-            <button class="danger-button" type="button" :disabled="removing" @click="remove">{{ removing ? 'Eliminando…' : 'Sí, eliminar mi cuenta' }}</button>
+            <button class="outline-button" type="button" :disabled="removing" @click="cancelRemoval">Volver</button>
+            <button class="danger-button" type="button" :disabled="saving || removing || removalConfirmation !== 'entiendo'" @click="remove">{{ removing ? 'Eliminando…' : 'Sí, eliminar mi cuenta' }}</button>
           </div>
         </div>
       </section>

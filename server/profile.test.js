@@ -123,7 +123,9 @@ test('HU09: impide eliminar una cuenta que creó una campaña activa', async () 
   const cookie = await register(first)
   campaign(1, 'Activa', 'active-campaign-01')
 
-  const response = await send('/api/profile', { method: 'DELETE', cookie })
+  const response = await send('/api/profile', {
+    method: 'DELETE', cookie, data: { confirmation: 'entiendo' },
+  })
   expect(response.status).toBe(409)
   expect((await body(response)).error).toBe('Cancela tus campañas activas antes de eliminar la cuenta.')
   expect(app.db.query('SELECT deleted_at FROM users WHERE id = 1').get().deleted_at).toBeNull()
@@ -136,7 +138,9 @@ test('HU09: elimina la cuenta sin campañas activas y conserva sus aportes', asy
   const campaignId = campaign(2, 'Activa', 'active-campaign-02')
   app.db.query('INSERT INTO contributions (campaign_id, user_id, amount_cents) VALUES (?, 1, 5000)').run(campaignId)
 
-  const response = await send('/api/profile', { method: 'DELETE', cookie })
+  const response = await send('/api/profile', {
+    method: 'DELETE', cookie, data: { confirmation: 'entiendo' },
+  })
   expect(response.status).toBe(204)
   expect(response.headers.get('set-cookie')).toContain('Max-Age=0')
   expect(app.db.query('SELECT COUNT(*) AS count FROM contributions WHERE user_id = 1').get().count).toBe(1)
@@ -144,4 +148,19 @@ test('HU09: elimina la cuenta sin campañas activas y conserva sus aportes', asy
   expect(app.db.query('SELECT COUNT(*) AS count FROM sessions WHERE user_id = 1').get().count).toBe(0)
   expect((await send('/api/profile', { cookie })).status).toBe(401)
   expect((await send('/api/auth/login', { method: 'POST', data: first })).status).toBe(401)
+})
+
+test('HU09: exige escribir entiendo antes de eliminar la cuenta', async () => {
+  const cookie = await register(first)
+
+  for (const confirmation of ['', 'Entiendo', 'entiendo ']) {
+    const response = await send('/api/profile', {
+      method: 'DELETE', cookie, data: { confirmation },
+    })
+    expect(response.status).toBe(422)
+    expect((await body(response)).error).toBe('Escribe entiendo para confirmar la eliminación de la cuenta.')
+  }
+
+  expect(app.db.query('SELECT deleted_at FROM users WHERE id = 1').get().deleted_at).toBeNull()
+  expect((await send('/api/profile', { cookie })).status).toBe(200)
 })
