@@ -9,8 +9,9 @@ import CampaignForm from './components/CampaignForm.vue'
 import CampaignEdit from './components/CampaignEdit.vue'
 import CampaignSummary from './components/CampaignSummary.vue'
 import ProfilePage from './components/ProfilePage.vue'
+import FavoritesPage from './components/FavoritesPage.vue'
 
-const allowedPages = ['landing', 'login', 'register', 'home', 'my-campaigns', 'profile']
+const allowedPages = ['landing', 'login', 'register', 'home', 'my-campaigns', 'profile', 'favorites']
 const readPage = () => {
   const value = window.location.hash.replace(/^#\/?/, '') || 'landing'
   return allowedPages.includes(value) || /^campaigns\/(new|[1-9]\d*(\/edit)?)$/.test(value) ? value : 'landing'
@@ -35,13 +36,13 @@ function navigate(destination, { replace = false, preserveNotice = false } = {})
   error.value = ''
   fieldErrors.value = {}
   if (!preserveNotice) notice.value = ''
-  document.title = ({ landing: 'CrowdStarter | Ideas que crecen juntas', login: 'Iniciar sesión | CrowdStarter', register: 'Crear cuenta | CrowdStarter', home: 'Inicio | CrowdStarter', profile: 'Mi perfil | CrowdStarter' })[destination] || 'Campañas | CrowdStarter'
+  document.title = ({ landing: 'CrowdStarter | Ideas que crecen juntas', login: 'Iniciar sesión | CrowdStarter', register: 'Crear cuenta | CrowdStarter', home: 'Inicio | CrowdStarter', profile: 'Mi perfil | CrowdStarter', favorites: 'Mis favoritas | CrowdStarter' })[destination] || 'Campañas | CrowdStarter'
   window.scrollTo(0, 0)
 }
 
 function guardPage() {
   let destination = readPage()
-  if ((destination === 'home' || destination === 'my-campaigns' || destination === 'profile' || destination.startsWith('campaigns/')) && !user.value) destination = 'login'
+  if ((['home', 'my-campaigns', 'profile', 'favorites'].includes(destination) || destination.startsWith('campaigns/')) && !user.value) destination = 'login'
   if (user.value && ['login', 'register'].includes(destination)) destination = 'home'
   navigate(destination, { replace: true })
 }
@@ -155,6 +156,7 @@ onUnmounted(() => window.removeEventListener('hashchange', onHashChange))
   <div v-if="loading" class="session-loading" role="status"><span class="wordmark">CrowdStarter.</span><p>Comprobando tu sesión…</p></div>
   <LandingPage v-else-if="page === 'landing'" :signed-in="!!user" />
   <HomePage v-else-if="page === 'home' && user" :user="user" :busy="busy" :error="error" @logout="logout" @session-expired="sessionExpired" />
+  <FavoritesPage v-else-if="page === 'favorites' && user" :busy="busy" :error="error" @logout="logout" @session-expired="sessionExpired" />
   <MyCampaignsPage v-else-if="page === 'my-campaigns' && user" :user="user" :busy="busy" :error="error" @logout="logout" @session-expired="sessionExpired" />
   <MemberLayout v-else-if="user && (page === 'profile' || page.startsWith('campaigns/'))" :busy="busy" :error="error" @logout="logout">
     <ProfilePage v-if="page === 'profile'" @updated="profileUpdated" @deleted="profileDeleted" @session-expired="sessionExpired" />

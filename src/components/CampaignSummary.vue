@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { requestApi } from '../api.js'
+import FavoriteButton from './FavoriteButton.vue'
 import { contributionToCents, daysRemaining, formatDeadline, formatGoal, fundingPercentage } from '../../shared/campaign.js'
 
 const props = defineProps({ campaignId: { type: String, required: true }, userId: { type: Number, required: true }, notice: { type: String, default: '' } })
@@ -199,6 +200,7 @@ onUnmounted(() => { version++ })
         <span>{{ fundingPercentage(campaign.raised_cents, campaign.goal_cents) }} % financiado</span>
         <progress :value="Math.min(fundingPercentage(campaign.raised_cents, campaign.goal_cents), 100)" max="100" :aria-label="'Progreso de financiamiento de ' + campaign.title"></progress>
       </section>
+      <FavoriteButton v-if="campaign.status === 'Activa'" :key="campaign.id" :campaign-id="campaign.id" @session-expired="emit('session-expired')" />
       <div v-if="campaign.status === 'Activa'" class="contribution-area">
         <button class="button-link" type="button" :disabled="paymentProcessing" :aria-expanded="showingContribution" aria-controls="contribution-form" @click="showingContribution = true; contributionError = ''; paymentNotice = ''">Aportar</button>
         <div v-if="paymentProcessing" class="payment-pending" role="status" aria-live="polite">
