@@ -34,7 +34,7 @@ const originalWindow = globalThis.window
 const originalDocument = globalThis.document
 const originalDocumentClass = globalThis.Document
 const originalShadowRoot = globalThis.ShadowRoot
-let app, root, props, calls, timers, handler, removed, expired
+let app, root, props, calls, timers, handler, favoriteHandler, removed, expired
 const campaign = (id = 1, status = 'Activa') => ({ id, status, owner_id: 1, creator_name: 'Creadora', title: 'Campaña ' + id, description: 'Idea', category: 'Educación', raised_cents: 0, goal_cents: 100000, deadline: '2099-12-31', imageUrl: '/image' })
 const response = (body, status = 200) => Response.json(body, { status })
 function deferred() { let resolve; const promise = new Promise(done => { resolve = done }); return { promise, resolve } }
@@ -61,8 +61,9 @@ async function startPayment(amount = '100') {
 }
 beforeEach(() => {
   calls = []; timers = []; removed = 0; expired = 0
+  favoriteHandler = () => response({ favorite: false })
   handler = path => response(path.endsWith('/contributions') ? { contributions: [] } : { campaign: campaign(Number(path.split('/').at(-1))) })
-  globalThis.fetch = async (path, options) => { calls.push({ path, options }); return handler(path, options) }
+  globalThis.fetch = async (path, options) => { calls.push({ path, options }); return path.startsWith('/api/favorites/') ? favoriteHandler(path, options) : handler(path, options) }
   globalThis.window = { setTimeout: (callback, delay) => { timers.push({ callback, delay }); return timers.length } }
   globalThis.Document = class Document {}
   globalThis.ShadowRoot = class ShadowRoot {}
@@ -129,7 +130,7 @@ test('HU08: muestra error del historial y permite reintentar sin recargar la cam
   await click('Reintentar historial')
   expect(text()).toContain('Ana')
   expect(text()).not.toContain('Historial no disponible')
-  expect(calls.filter(call => !call.path.endsWith('/contributions'))).toHaveLength(1)
+  expect(calls.filter(call => /^\/api\/campaigns\/\d+$/.test(call.path))).toHaveLength(1)
 })
 
 test('HU08: descarta un historial antiguo cuando cambia la campaña', async () => {
@@ -175,4 +176,51 @@ test('HU06: cancelar exige confirmación y oculta Aportar después del éxito', 
   await click('Cancelar Campaña'); await click('Sí, cancelar campaña')
   expect(text()).toContain('La campaña fue cancelada y ya no acepta nuevos aportes.')
   expect(all().some(el => el.type === 'button' && text(el) === 'Aportar')).toBe(false)
+})
+
+test('HU10: guardar y quitar actualizan el botón solo tras confirmar el servidor', async () => {
+  const save = deferred()
+  favoriteHandler = (path, options) => options.method === 'PUT' ? save.promise : response({ favorite: false })
+  await mount()
+  await click('Guardar en favoritas')
+  expect(button('Guardando…').props.disabled).toBe(true)
+  await click('Guardando…')
+  expect(calls.filter(call => call.options.method === 'PUT')).toHaveLength(1)
+  save.resolve(response({ favorite: true })); await flush()
+  expect(button('Quitar de favoritas').props['aria-pressed']).toBe(true)
+  await click('Quitar de favoritas')
+  expect(button('Guardar en favoritas').props['aria-pressed']).toBe(false)
+})
+
+test('HU10: error al guardar conserva la selección y permite reintentar', async () => {
+  let saves = 0
+  favoriteHandler = (path, options) => options.method === 'PUT' && ++saves === 1 ? response({ error: 'No se pudo guardar' }, 503) : response({ favorite: false })
+  await mount(); await click('Guardar en favoritas')
+  expect(text()).toContain('No se pudo guardar')
+  expect(button('Guardar en favoritas').props.disabled).toBe(false)
+  expect(text()).not.toContain('Campaña guardada en tus favoritas.')
+  await click('Guardar en favoritas')
+  expect(text()).toContain('Campaña guardada en tus favoritas.')
+})
+
+test('HU10: error de lectura permite reintentar sin ocultar el detalle', async () => {
+  let reads = 0
+  favoriteHandler = () => ++reads === 1 ? response({ error: 'Favoritas no disponibles' }, 503) : response({ favorite: true })
+  await mount()
+  expect(text()).toContain('Campaña 1')
+  expect(button('Guardar en favoritas').props.disabled).toBe(true)
+  await click('Reintentar favoritas')
+  expect(button('Quitar de favoritas').props.disabled).toBe(false)
+})
+
+test('HU10: una respuesta de otra campaña no cambia su selección y una sesión vencida avisa', async () => {
+  const old = deferred()
+  favoriteHandler = path => path.endsWith('/1') ? old.promise : response({ favorite: false })
+  await mount(); props.campaignId = '2'; await flush()
+  old.resolve(response({ favorite: true })); await flush()
+  expect(text()).toContain('Campaña 2')
+  expect(button('Guardar en favoritas').props['aria-pressed']).toBe(false)
+  favoriteHandler = () => response({ error: 'Debes iniciar sesión.' }, 401)
+  await click('Guardar en favoritas')
+  expect(expired).toBe(1)
 })
