@@ -1,4 +1,11 @@
 :root { font-family: 'DM Sans', system-ui, sans-serif; color: #202a37; background: #f7f9fc; font-synthesis: none; text-rendering: optimizeLegibility; }
+.favorite-control { margin: 20px 0; }
+.favorite-notice { color: #216454; font-size: .9rem; }
+.favorite-card-link { display: block; color: inherit; text-decoration: none; }
+.favorite-card-link > img { width: 100%; height: 180px; object-fit: cover; background: #edf2e6; }
+.favorites-grid .tile-copy { display: grid; gap: 10px; }
+.favorite-card-actions { padding: 0 22px 22px; }
+.favorites-grid h2 { font-size: 1.2rem; overflow-wrap: anywhere; }
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
 button, input { font: inherit; }

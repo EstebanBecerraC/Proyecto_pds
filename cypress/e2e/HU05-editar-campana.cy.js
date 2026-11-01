@@ -1,3 +1,5 @@
+import { submitAuth } from '../helpers/auth.js'
+
 const password = 'Clave-segura-123'
 const owner = {
   name: 'Creador HU05',
@@ -17,7 +19,7 @@ function login(email = owner.email) {
   cy.location('hash').should('eq', '#/login')
   cy.get('#email').type(email)
   cy.get('#password').type(password, { log: false })
-  cy.contains('button', /^Iniciar sesión$/).click()
+  submitAuth('login', /^Iniciar sesión$/, [200])
   return cy.location('hash').should('eq', '#/home')
 }
 
@@ -32,7 +34,7 @@ function register(user) {
   cy.get('#email').type(user.email)
   cy.get('#password').type(user.password, { log: false })
   cy.get('#confirmation').type(user.password, { log: false })
-  cy.contains('button', /^Crear cuenta$/).click()
+  submitAuth('register', /^Crear cuenta$/, [201])
   return cy.location('hash').should('eq', '#/home')
 }
 

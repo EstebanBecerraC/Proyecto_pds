@@ -1,3 +1,5 @@
+import { submitAuth } from '../helpers/auth.js'
+
 const initialPassword = 'Clave-perfil-123'
 const changedPassword = 'Clave-perfil-456'
 const runId = Date.now()
@@ -24,7 +26,7 @@ function register(account) {
   cy.get('#email').type(account.email)
   cy.get('#password').type(account.password, { log: false })
   cy.get('#confirmation').type(account.password, { log: false })
-  cy.contains('button', /^Crear cuenta$/).click()
+  submitAuth('register', /^Crear cuenta$/, [201])
   cy.location('hash').should('eq', '#/home')
 }
 
@@ -33,7 +35,8 @@ function login(email, password) {
   cy.visit('/#/login')
   cy.get('#email').type(email)
   cy.get('#password').type(password, { log: false })
-  cy.contains('button', /^Iniciar sesión$/).click()
+  // Some callers intentionally use wrong credentials and assert the 401 alert.
+  submitAuth('login', /^Iniciar sesión$/, [200, 401])
 }
 
 function openProfile() {
@@ -100,7 +103,7 @@ describe('HU-09: gestionar perfil', () => {
     cy.contains('[role="alert"]', 'Correo o contraseña incorrectos').should('be.visible')
 
     cy.get('#password').clear().type(changedPassword, { log: false })
-    cy.contains('button', /^Iniciar sesión$/).click()
+    submitAuth('login', /^Iniciar sesión$/, [200])
     cy.location('hash').should('eq', '#/home')
   })
 

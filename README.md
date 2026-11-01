@@ -32,6 +32,7 @@ Actualmente, la plataforma permite:
 - Modificar campañas.
 - Cancelar campañas.
 - Eliminar campañas.
+- Guardar campañas activas como favoritas y consultar la selección personal.
 
 ## 3. Funcionalidades actualmente implementadas
 
@@ -187,6 +188,16 @@ Desde allí pueden:
 - Cancelar campañas.
 - Eliminar campañas.
 
+
+## Campañas favoritas — HU10
+
+Desde el detalle de una campaña activa, selecciona **Guardar en favoritas**.
+En **Mis favoritas** puedes abrir sus detalles o quitarlas de la selección.
+Las favoritas se conservan entre sesiones y pertenecen únicamente a tu cuenta.
+Las campañas canceladas dejan de ser visibles para otros usuarios, también en esta lista.
+
+- [Historia, criterios y API](HU-10.md)
+- [Verificación, evidencias y guía de cierre de entrega 2](docs/HU10-verificacion.md)
 
 ## Integrantes
 
