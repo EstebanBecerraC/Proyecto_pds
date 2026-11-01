@@ -42,7 +42,7 @@ La duración total indicada es **01:59**. Cypress representa con guiones las col
 
 ## Cápsula de video
 
-- [Cápsula de entrega 2](https://youtu.be/Fn5n3GNrePk), enlace proporcionado por el equipo. Verificar su reproducción sin solicitar acceso antes de entregar.
+- [Cápsula de entrega 2](https://youtu.be/Fn5n3GNrePk), enlace proporcionado por el equipo.
 
 Los XML JUnit son opcionales si la captura muestra los resultados necesarios. Antes de publicar nuevos archivos, revisar que no expongan tokens, webhooks privados, contraseñas o datos personales reales.
 
