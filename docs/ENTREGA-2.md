@@ -169,7 +169,7 @@ La revisión local del commit `c684be0`, posteriormente integrado mediante la PR
 
 Bun cubre autenticación, validaciones, API, persistencia, lógica de componentes y el helper de autenticación E2E. Cypress comprueba flujos completos de edición de campañas, perfil y favoritas. Estos escenarios no constituyen cobertura E2E de todas las funcionalidades.
 
-La PR #5 se integró en `develop` mediante `15613b603612cdfce45821b20840aa4b1e01c31c`. El equipo confirmó la ejecución automática y exitosa [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/), el estado de GitHub y la notificación de Discord. El acceso al pipeline requiere autorización. El repositorio incluye cinco capturas PNG y dos impresiones PDF revisadas; falta adjuntar el resumen Cypress o su reporte equivalente. Consultar el índice para el alcance de cada evidencia.
+La PR #5 se integró en `develop` mediante `15613b603612cdfce45821b20840aa4b1e01c31c`. El equipo confirmó la ejecución automática y exitosa [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/), el estado de GitHub y la notificación de Discord. El acceso al pipeline requiere autorización. El repositorio incluye seis capturas PNG y dos impresiones PDF revisadas, incluido el resumen Cypress y su transcripción legible. Consultar el índice para el alcance de cada evidencia.
 
 Resultado esperado: Jenkins **SUCCESS**, estado GitHub `success` y aviso de éxito en Discord. Pruebas o compilación fallidas deben dejar visible el fallo. Los errores de integración pueden producir un estado inestable; no equivalen a una validación exitosa.
 
@@ -189,7 +189,7 @@ Las notas están preparadas en [RELEASE-2.md](RELEASE-2.md) y los cambios resumi
 Antes de publicar:
 
 - Integrar y validar la documentación.
-- Completar el desglose Cypress entre las evidencias accesibles para evaluación.
+- Mantener las ocho evidencias revisadas junto a la documentación de la release.
 - Grabar la cápsula y agregar su enlace como **video de entrega 2**.
 - Revisar la versión estable, integrar `develop` hacia `main` mediante PR y validar el commit elegido.
 - Crear el tag propuesto `v2.0.0` en ese commit y publicar la GitHub Release con sus notas y enlaces.

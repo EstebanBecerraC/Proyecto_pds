@@ -38,7 +38,7 @@ Las simulaciones de error forman parte de la prueba de comportamiento esperado; 
 
 El equipo confirmó ejecución automática y exitosa de [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/) después del merge, junto con el estado GitHub y el aviso en Discord.
 
-El pipeline requiere autenticación. Las capturas y PDF revisados están en el [índice de evidencias](evidencias/entrega-2/README.md). Antes de publicar la release, completar el resumen Cypress. Las impresiones de interfaz complementan las pruebas; no las reemplazan. Los resultados locales anteriores se distinguen de esta confirmación del equipo.
+El pipeline requiere autenticación. Las capturas y PDF revisados están en el [índice de evidencias](evidencias/entrega-2/README.md). El resumen Cypress está incorporado con una transcripción de los 14 escenarios aprobados, porque los códigos ANSI dificultan leer la tabla original. Las impresiones de interfaz complementan las pruebas; no las reemplazan. Los resultados locales anteriores se distinguen de esta confirmación del equipo.
 
 ## Repetir la comprobación
 

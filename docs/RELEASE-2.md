@@ -40,8 +40,8 @@ Seguir [README.md](../README.md). No se agregan dependencias para HU10. Al inici
 ## Lista previa a publicación
 
 - [ ] Integrar la documentación y revisar sus enlaces.
-- [x] Incorporar y revisar cinco capturas PNG y dos PDF accesibles al evaluador.
-- [ ] Completar el resumen Cypress de Jenkins #10 o su reporte equivalente.
+- [x] Incorporar y revisar seis capturas PNG y dos PDF accesibles al evaluador.
+- [x] Incorporar el resumen Cypress de Jenkins #10 y transcribir su tabla para facilitar la lectura.
 - [ ] Agregar el video de entrega 2.
 - [ ] Revisar e integrar la versión estable en main.
 - [ ] Identificar el SHA final y su validación.
