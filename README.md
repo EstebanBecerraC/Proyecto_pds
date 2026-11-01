@@ -229,13 +229,9 @@ el estado del commit en GitHub y envía notificaciones a Discord.
 - [Configuración y operación de CI/CD](docs/CI-CD.md)
 - [Jenkins](https://crowdstarter-jenkins.duckdns.org/) (requiere autenticación)
 
-La tarea sigue `develop`: los merges y pushes a esa rama pueden iniciar Jenkins automáticamente. La validación local de HU10 obtuvo **137 pruebas Bun y 14 escenarios Cypress aprobados**, además del build. El equipo confirmó el éxito del pipeline posterior al merge en [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/) (requiere autenticación).
-
-El pipeline conserva `dist/`; no despliega la aplicación públicamente de forma permanente. Discord está aceptado para esta entrega en lugar de Slack.
+La tarea de Jenkins sigue `develop`: los merges y pushes a esa rama pueden iniciar Jenkins automáticamente. Como ejemplo: La validación local de HU10 obtuvo **137 pruebas Bun y 14 escenarios Cypress aprobados**, además del build. 
 
 - [Documento principal de entrega 2 y arquitectura](docs/ENTREGA-2.md)
 - [Índice de evidencias](docs/evidencias/entrega-2/README.md)
 - [Registro de cambios](CHANGELOG.md)
 - [Borrador de notas para la release 2](docs/RELEASE-2.md)
-
-La documentación, las ocho evidencias y el [video de entrega 2](https://youtu.be/Fn5n3GNrePk) están preparados. Falta integrar y validar la documentación y publicar la release con el tag propuesto `v2.0.0`.
