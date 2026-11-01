@@ -26,6 +26,8 @@ export function createAuth(databasePath, { origin = 'http://localhost:5173', sec
     );
     CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
   `)
+  if (!db.query('PRAGMA table_info(users)').all().some(column => column.name === 'deleted_at'))
+    db.exec('ALTER TABLE users ADD COLUMN deleted_at TEXT')
   const cookie = (token, age = SESSION_SECONDS) =>
     `session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${secure ? '; Secure' : ''}`
   const getToken = request => (request.headers.get('cookie') || '')
@@ -39,7 +41,7 @@ export function createAuth(databasePath, { origin = 'http://localhost:5173', sec
     const token = getToken(request)
     return token ? db.query(`SELECT users.id, users.name, users.email
       FROM sessions JOIN users ON users.id = sessions.user_id
-      WHERE sessions.token_hash = ? AND sessions.expires_at > ?`).get(tokenHash(token), Date.now()) : null
+      WHERE sessions.token_hash = ? AND sessions.expires_at > ? AND users.deleted_at IS NULL`).get(tokenHash(token), Date.now()) : null
   }
   function session(user, oldToken, status = 200) {
     const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, '0')).join('')
@@ -103,7 +105,7 @@ export function createAuth(databasePath, { origin = 'http://localhost:5173', sec
       })()
     }
     if (!isValidEmail(email) || password.length > 128) return json({ error: INCORRECT_CREDENTIALS }, 401)
-    const user = db.query('SELECT * FROM users WHERE email = ?').get(email)
+    const user = db.query('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL').get(email)
     const valid = await Bun.password.verify(password, user?.password_hash || dummyHash)
     if (!user || !valid) return json({ error: INCORRECT_CREDENTIALS }, 401)
     return session(user, token)

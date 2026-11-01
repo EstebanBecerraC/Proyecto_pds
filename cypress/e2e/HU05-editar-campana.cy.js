@@ -1,4 +1,5 @@
-const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j3ioAAAAASUVORK5CYII='
+import { submitAuth } from '../helpers/auth.js'
+
 const password = 'Clave-segura-123'
 const owner = {
   name: 'Creador HU05',
@@ -9,22 +10,31 @@ const owner = {
 let campaignId
 
 function login(email = owner.email) {
-  cy.clearCookies()
+  cy.clearAllCookies()
+  // Reiniciar Vue antes de navegar al formulario.
+  cy.visit('/')
+  cy.reload()
+  cy.location('hash').should('eq', '#/')
   cy.visit('/#/login')
+  cy.location('hash').should('eq', '#/login')
   cy.get('#email').type(email)
   cy.get('#password').type(password, { log: false })
-  cy.contains('button', /^Iniciar sesión$/).click()
+  submitAuth('login', /^Iniciar sesión$/, [200])
   return cy.location('hash').should('eq', '#/home')
 }
 
 function register(user) {
-  cy.clearCookies()
+  cy.clearAllCookies()
+  cy.visit('/')
+  cy.reload()
+  cy.location('hash').should('eq', '#/')
   cy.visit('/#/register')
+  cy.location('hash').should('eq', '#/register')
   cy.get('#name').type(user.name)
   cy.get('#email').type(user.email)
   cy.get('#password').type(user.password, { log: false })
   cy.get('#confirmation').type(user.password, { log: false })
-  cy.contains('button', /^Crear cuenta$/).click()
+  submitAuth('register', /^Crear cuenta$/, [201])
   return cy.location('hash').should('eq', '#/home')
 }
 
@@ -55,7 +65,7 @@ function browserApi(url, method = 'GET') {
 
 function image(fileName = 'campana.png') {
   return {
-    contents: Cypress.Buffer.from(png, 'base64'),
+    contents: 'cypress/fixtures/campana.png',
     fileName,
     mimeType: 'image/png',
   }
@@ -74,7 +84,7 @@ describe('HU-05: editar campaña', () => {
   beforeEach(() => {
     login()
 
-    cy.intercept('POST', '/api/campaigns').as('create')
+    // Verificar persistencia por UI y API sin interceptar el cuerpo binario multipart.
     cy.visit('/#/campaigns/new')
 
     cy.get('#campaign-title').type('Campaña HU05')
@@ -87,11 +97,9 @@ describe('HU-05: editar campaña', () => {
 
     cy.contains('button', 'Guardar borrador').click()
 
-    cy.wait('@create').then(({ response }) => {
-      expect(response.statusCode).to.eq(201)
-      campaignId = response.body.campaign.id
+    cy.location('hash').should('match', /^#[/]campaigns[/][1-9][0-9]*$/).then(hash => {
+      campaignId = Number(hash.split('/').pop())
     })
-
     cy.contains('h1', 'Campaña HU05').should('be.visible')
   })
 
@@ -112,9 +120,8 @@ describe('HU-05: editar campaña', () => {
     cy.get('#campaign-goal').clear().type('250000')
     cy.get('#campaign-deadline').clear().type('2099-11-30')
 
-    cy.intercept('PUT', '/api/campaigns/*').as('edit')
     cy.contains('button', 'Guardar cambios').click()
-    cy.wait('@edit').its('response.statusCode').should('eq', 200)
+    cy.contains('Los cambios de la campaña se guardaron correctamente.').should('be.visible')
 
     cy.contains('Los cambios de la campaña se guardaron correctamente.')
       .should('be.visible')
@@ -149,9 +156,8 @@ describe('HU-05: editar campaña', () => {
     cy.get('img[alt="Vista previa de la imagen de la campaña"]')
       .should('be.visible')
 
-    cy.intercept('PUT', '/api/campaigns/*').as('edit')
     cy.contains('button', 'Guardar cambios').click()
-    cy.wait('@edit').its('response.statusCode').should('eq', 200)
+    cy.contains('Los cambios de la campaña se guardaron correctamente.').should('be.visible')
 
     cy.get('.summary-image')
       .should('be.visible')
