@@ -216,7 +216,7 @@ Las campañas canceladas dejan de ser visibles para otros usuarios, también en 
 
 - [Repositorio](https://github.com/EstebanBecerraC/Proyecto_pds)
 - [Video existente](https://youtu.be/O6EkOwl1mQY)
-- Cápsula de entrega 2: pendiente de grabar y agregar su enlace.
+- [Cápsula de entrega 2](https://youtu.be/Fn5n3GNrePk)
 - [Wiki](https://github.com/EstebanBecerraC/Proyecto_pds/wiki)
 - [Releases](https://github.com/EstebanBecerraC/Proyecto_pds/releases)
 
@@ -238,4 +238,4 @@ El pipeline conserva `dist/`; no despliega la aplicación públicamente de forma
 - [Registro de cambios](CHANGELOG.md)
 - [Borrador de notas para la release 2](docs/RELEASE-2.md)
 
-La release 2 aún está en preparación; queda por incorporar el enlace del nuevo video antes de publicar el tag propuesto `v2.0.0`.
+La documentación, las ocho evidencias y el [video de entrega 2](https://youtu.be/Fn5n3GNrePk) están preparados. Falta integrar y validar la documentación y publicar la release con el tag propuesto `v2.0.0`.

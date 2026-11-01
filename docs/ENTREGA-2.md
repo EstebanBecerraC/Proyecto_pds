@@ -190,7 +190,7 @@ Antes de publicar:
 
 - Integrar y validar la documentación.
 - Mantener las ocho evidencias revisadas junto a la documentación de la release.
-- Grabar la cápsula y agregar su enlace como **video de entrega 2**.
+- Comprobar el acceso sin permisos adicionales al [video de entrega 2](https://youtu.be/Fn5n3GNrePk), grabado y enlazado por el equipo.
 - Revisar la versión estable, integrar `develop` hacia `main` mediante PR y validar el commit elegido.
 - Crear el tag propuesto `v2.0.0` en ese commit y publicar la GitHub Release con sus notas y enlaces.
 

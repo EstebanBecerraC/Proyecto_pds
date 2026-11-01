@@ -35,14 +35,15 @@ Seguir [README.md](../README.md). No se agregan dependencias para HU10. Al inici
 - [Operación de Jenkins](CI-CD.md).
 - [HU-09](../HU-09.md) y [HU-10](../HU-10.md).
 - [Cambios de la versión](../CHANGELOG.md).
-- Video de entrega 2: pendiente de grabar y enlazar.
+- [Video de entrega 2](https://youtu.be/Fn5n3GNrePk).
 
 ## Lista previa a publicación
 
 - [ ] Integrar la documentación y revisar sus enlaces.
 - [x] Incorporar y revisar seis capturas PNG y dos PDF accesibles al evaluador.
 - [x] Incorporar el resumen Cypress de Jenkins #10 y transcribir su tabla para facilitar la lectura.
-- [ ] Agregar el video de entrega 2.
+- [x] Agregar el [video de entrega 2](https://youtu.be/Fn5n3GNrePk).
+- [ ] Confirmar que el video puede reproducirse sin solicitar acceso.
 - [ ] Revisar e integrar la versión estable en main.
 - [ ] Identificar el SHA final y su validación.
 - [ ] Crear el tag v2.0.0 y publicar las notas completas en GitHub Releases.

@@ -40,9 +40,9 @@ El bloque `(Run Finished)`, a las **13:37:45**, y la línea **`All specs passed!
 
 La duración total indicada es **01:59**. Cypress representa con guiones las columnas sin casos; aquí se expresan como cero. Esta tabla es una transcripción para facilitar la lectura y no reemplaza la captura original.
 
-## Pendiente para la entrega
+## Cápsula de video
 
-- Cápsula de entrega 2: pendiente de grabar y enlazar.
+- [Cápsula de entrega 2](https://youtu.be/Fn5n3GNrePk), enlace proporcionado por el equipo. Verificar su reproducción sin solicitar acceso antes de entregar.
 
 Los XML JUnit son opcionales si la captura muestra los resultados necesarios. Antes de publicar nuevos archivos, revisar que no expongan tokens, webhooks privados, contraseñas o datos personales reales.
 
