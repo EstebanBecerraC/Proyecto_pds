@@ -100,7 +100,7 @@ Jenkins valida el secreto compartido. El script [github-status.mjs](../scripts/g
 
 [notify-discord.mjs](../scripts/notify-discord.mjs) informa resultado, nombre y número del trabajo, commit y enlace. El aviso se envía al finalizar. Si una notificación falla, queda registrado y puede marcar una ejecución exitosa como inestable.
 
-El equipo confirmó que está permitido utilizar Discord en lugar de Slack para esta entrega.
+Discord se utiliza como sustitución autorizada de Slack para esta entrega.
 
 Las credenciales permanecen en Jenkins; el código solo referencia sus identificadores. No se publican tokens, URLs privadas de webhooks ni claves SSH.
 
@@ -143,7 +143,7 @@ Abrir [crowdstarter-ci](https://crowdstarter-jenkins.duckdns.org/job/crowdstarte
 5. Comprobar pruebas, compilación, artefactos, estado de GitHub y aviso en Discord.
 6. Si no inicia, revisar las entregas recientes del webhook en GitHub y la rama configurada en Jenkins.
 
-El equipo confirmó este flujo tras integrar la PR #5. La evidencia se referencia en el [índice de evidencias](evidencias/entrega-2/README.md).
+Este flujo se ejecutó tras integrar la PR #5. Las capturas 01 y 02 del [índice de evidencias](evidencias/entrega-2/README.md) muestran el inicio por GitHub push y el SHA de develop.
 
 ## 7. Mejoras de la aplicación
 
@@ -156,7 +156,7 @@ La eliminación de cuenta conserva los aportes mediante anonimización e invalid
 
 ## 8. Pruebas y relación con CI
 
-La revisión local del commit `c684be0`, posteriormente integrado mediante la PR #5, obtuvo:
+La ejecución local del commit `c684be0`, posteriormente integrado mediante la PR #5, obtuvo:
 
 | Verificación | Resultado |
 |---|---|
@@ -169,29 +169,23 @@ La revisión local del commit `c684be0`, posteriormente integrado mediante la PR
 
 Bun cubre autenticación, validaciones, API, persistencia, lógica de componentes y el helper de autenticación E2E. Cypress comprueba flujos completos de edición de campañas, perfil y favoritas. Estos escenarios no constituyen cobertura E2E de todas las funcionalidades.
 
-La PR #5 se integró en `develop` mediante `15613b603612cdfce45821b20840aa4b1e01c31c`. El equipo confirmó la ejecución automática y exitosa [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/), el estado de GitHub y la notificación de Discord. El acceso al pipeline requiere autorización. El repositorio incluye seis capturas PNG y dos impresiones PDF revisadas, incluido el resumen Cypress y su transcripción legible. Consultar el índice para el alcance de cada evidencia.
+La PR #5 se integró en `develop` mediante `15613b603612cdfce45821b20840aa4b1e01c31c`. [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/) finalizó correctamente. Las capturas 01, 02, 04 y 05 muestran el disparo automático, el estado del merge en GitHub y la notificación de Discord. El acceso al pipeline requiere autorización. El repositorio incluye seis capturas PNG y dos impresiones PDF revisadas, incluido el resumen Cypress y su transcripción legible. Consultar el índice para el alcance de cada evidencia.
 
 Resultado esperado: Jenkins **SUCCESS**, estado GitHub `success` y aviso de éxito en Discord. Pruebas o compilación fallidas deben dejar visible el fallo. Los errores de integración pueden producir un estado inestable; no equivalen a una validación exitosa.
 
 ## 9. Evidencias
 
-Consultar el [índice de evidencias](evidencias/entrega-2/README.md), que distingue resultados locales, confirmación del equipo y archivos revisados.
+El [índice de evidencias](evidencias/entrega-2/README.md) relaciona los resultados de Jenkins, el estado de GitHub, la notificación de Discord y las pantallas de HU09/HU10.
 
 - [PR #3: perfil](https://github.com/EstebanBecerraC/Proyecto_pds/pull/3).
 - [PR #4: Cypress de perfil](https://github.com/EstebanBecerraC/Proyecto_pds/pull/4).
 - [PR #5: favoritas](https://github.com/EstebanBecerraC/Proyecto_pds/pull/5).
 - [Jenkins #10: validación posterior al merge](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/) — requiere autenticación.
 
-## 10. Preparación de la release 2
+## 10. Documentación de la versión
 
-Las notas están preparadas en [RELEASE-2.md](RELEASE-2.md) y los cambios resumidos en [CHANGELOG.md](../CHANGELOG.md). La release aún no está publicada.
+Las [notas de la release 2](RELEASE-2.md) resumen las funcionalidades, la validación y los límites de la versión. El [registro de cambios](../CHANGELOG.md) presenta las diferencias respecto a la primera entrega.
 
-Antes de publicar:
+La [cápsula de entrega 2](https://youtu.be/Fn5n3GNrePk) acompaña la documentación y las ocho evidencias versionadas.
 
-- Integrar y validar la documentación.
-- Mantener las ocho evidencias revisadas junto a la documentación de la release.
-- Comprobar el acceso sin permisos adicionales al [video de entrega 2](https://youtu.be/Fn5n3GNrePk), grabado y enlazado por el equipo.
-- Revisar la versión estable, integrar `develop` hacia `main` mediante PR y validar el commit elegido.
-- Crear el tag propuesto `v2.0.0` en ese commit y publicar la GitHub Release con sus notas y enlaces.
-
-La tarea actual de Jenkins sigue `develop`; crear un tag o actualizar `main` no cambia automáticamente su rama de validación.
+Jenkins sigue la rama develop. La creación de un tag o la actualización de main no cambia la rama configurada en la tarea.

@@ -50,13 +50,13 @@ Los helpers de autenticación limpian cookies y recargan la aplicación para ais
 
 Un error al publicar el estado inicial falla el pipeline. Un error de publicación final o de Discord queda visible y puede marcar una ejecución exitosa como inestable. GitHub conserva el último estado recibido si no se puede publicar uno nuevo.
 
-[notify-discord.mjs](../scripts/notify-discord.mjs) notifica resultado, trabajo, número, commit y enlace. El equipo confirmó que Discord está aceptado como sustitución de Slack.
+[notify-discord.mjs](../scripts/notify-discord.mjs) notifica resultado, trabajo, número, commit y enlace. Discord es el canal de notificaciones utilizado en esta entrega, como sustitución autorizada de Slack.
 
 ## Validación de entrega 2
 
-La revisión local de `c684be0` aprobó **137 pruebas Bun**, **851 expectativas en 13 archivos**, build y **14 escenarios Cypress**: HU05 (6), HU09 (4), HU10 (4).
+La ejecución local de `c684be0` obtuvo **137 pruebas Bun**, **851 expectativas en 13 archivos**, build y **14 escenarios Cypress**: HU05 (6), HU09 (4), HU10 (4).
 
-La [PR #5](https://github.com/EstebanBecerraC/Proyecto_pds/pull/5) se integró en `develop` mediante `15613b603612cdfce45821b20840aa4b1e01c31c`. El equipo confirmó que [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/) se inició automáticamente y terminó correctamente, con estado GitHub y aviso Discord. Su panel requiere autenticación. Las capturas de Jenkins, GitHub y Discord y las impresiones de las funcionalidades están enlazadas en el [índice de evidencias](evidencias/entrega-2/README.md). El índice incluye el resumen Cypress y una tabla transcrita para facilitar su lectura ante los códigos ANSI visibles en consola. El aviso de Discord identifica el trabajo y la ejecución, pero muestra «Commit: no disponible»; la captura de Jenkins acredita el SHA.
+La [PR #5](https://github.com/EstebanBecerraC/Proyecto_pds/pull/5) se integró en `develop` mediante `15613b603612cdfce45821b20840aa4b1e01c31c`. [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/) se inició automáticamente y terminó correctamente. Las capturas 01 a 05 documentan la ejecución, el disparo por GitHub, las pruebas Bun, el estado del merge y el aviso de Discord. Su panel requiere autenticación. Las capturas de Jenkins, GitHub y Discord y las impresiones de las funcionalidades están enlazadas en el [índice de evidencias](evidencias/entrega-2/README.md). El índice incluye el resumen Cypress y una tabla transcrita para facilitar su lectura ante los códigos ANSI visibles en consola. El aviso de Discord identifica el trabajo y la ejecución, pero muestra «Commit: no disponible»; la captura de Jenkins acredita el SHA.
 
 Existen referencias históricas a las ejecuciones [#4](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/4/) (fallo controlado) y [#5](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/5/) (recuperación), sobre la configuración inicial de CI. No validan HU09/HU10 y pueden caducar por retención.
 
@@ -72,7 +72,7 @@ Versiones registradas durante la configuración: Debian 13 x86_64, Java Temurin 
 - Caddy administra HTTPS para el subdominio DuckDNS.
 - Puerto 8080 publicado solo en `127.0.0.1`; web pública por 80 y 443.
 - SSH restringido a la IP del administrador y autenticado con clave.
-- El panel se puede abrir desde cualquier red y requiere autenticación. Verificar que registro público y lectura anónima estén desactivados.
+- El panel se puede abrir desde cualquier red y requiere autenticación; los permisos de acceso se administran en la configuración de seguridad de Jenkins.
 
 La aplicación se levanta dentro del agente durante E2E. Conservar `dist/` no despliega un sitio público ni la API/SQLite de forma permanente.
 

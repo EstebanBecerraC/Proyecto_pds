@@ -6,9 +6,9 @@ La implementación se preparó sobre `develop` en `014231f` y se revisó en `c68
 
 Agrega tabla SQLite, API, botón en el detalle y pantalla Mis favoritas, sin dependencias adicionales. La tabla se crea al iniciar la API y conserva los datos existentes.
 
-## Resultado de la revisión local
+## Resultados locales
 
-Revisión ejecutada el 1 de noviembre de 2026 en una copia temporal de la PR:
+Pruebas ejecutadas el 1 de noviembre de 2026 en una copia temporal de la PR:
 
 ```text
 Bun: 137 pass, 0 fail
@@ -32,13 +32,11 @@ Las pruebas de HU10 incluyen 12 casos de API y 4 del botón dentro del component
 | HU10-CY-03 | Errores simulados de guardado, listado y eliminación; reintentos sin anunciar éxito prematuro. |
 | HU10-CY-04 | Redirección al login y respuesta 401 de la API sin sesión. |
 
-Las simulaciones de error forman parte de la prueba de comportamiento esperado; no describen incidentes del equipo.
-
 ## Validación en develop
 
-El equipo confirmó ejecución automática y exitosa de [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/) después del merge, junto con el estado GitHub y el aviso en Discord.
+[Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/) finalizó correctamente después del merge. Las capturas 01, 02, 04 y 05 muestran el disparo automático, el SHA evaluado, el estado del merge y el aviso de Discord.
 
-El pipeline requiere autenticación. Las capturas y PDF revisados están en el [índice de evidencias](evidencias/entrega-2/README.md). El resumen Cypress está incorporado con una transcripción de los 14 escenarios aprobados, porque los códigos ANSI dificultan leer la tabla original. Las impresiones de interfaz complementan las pruebas; no las reemplazan. Los resultados locales anteriores se distinguen de esta confirmación del equipo.
+El pipeline requiere autenticación. Las capturas y PDF revisados están en el [índice de evidencias](evidencias/entrega-2/README.md). El resumen Cypress está incorporado con una transcripción de los 14 escenarios aprobados, porque los códigos ANSI dificultan leer la tabla original. Las impresiones de interfaz complementan las pruebas; no las reemplazan. La captura 03 documenta las 137 pruebas Bun y la captura 08 el resumen de los 14 escenarios Cypress.
 
 ## Repetir la comprobación
 
@@ -57,4 +55,4 @@ bun run test:e2e --spec cypress/e2e/HU10-campanas-favoritas.cy.js
 5. Volver a A y quitar desde la lista; guardar otra vez y quitar desde detalle.
 6. Guardar una campaña ajena, cancelarla como creador y comprobar que desaparece para A.
 
-Los criterios completos están en [HU-10.md](../HU-10.md). La preparación de la release se reúne en [ENTREGA-2.md](ENTREGA-2.md).
+Los criterios completos están en [HU-10.md](../HU-10.md). El alcance de la entrega se describe en [ENTREGA-2.md](ENTREGA-2.md).

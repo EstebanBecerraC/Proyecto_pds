@@ -42,8 +42,6 @@ La duración total indicada es **01:59**. Cypress representa con guiones las col
 
 ## Cápsula de video
 
-- [Cápsula de entrega 2](https://youtu.be/Fn5n3GNrePk), enlace proporcionado por el equipo.
+- [Cápsula de entrega 2](https://youtu.be/Fn5n3GNrePk).
 
-Los XML JUnit son opcionales si la captura muestra los resultados necesarios. Antes de publicar nuevos archivos, revisar que no expongan tokens, webhooks privados, contraseñas o datos personales reales.
-
-Jenkins conserva 15 ejecuciones y artefactos de las últimas 5. Conservar copias de la evidencia relevante antes de que la retención la elimine.
+Las capturas de esta carpeta conservan los resultados relevantes de Jenkins #10. El servidor mantiene 15 ejecuciones y artefactos de las últimas 5; por eso, los archivos versionados permiten consultar estas evidencias aunque la ejecución deje de estar disponible.

@@ -1,8 +1,8 @@
 # Registro de cambios
 
-## Release 2 — preparada, aún no publicada
+## Entrega 2
 
-Tag propuesto: `v2.0.0`. La base funcional está integrada en `develop` mediante `15613b6`. La fecha y el commit de publicación se fijarán al crear la release.
+Cambios respecto a `v1.0-entrega1`. Las funcionalidades de esta entrega se integraron en `develop` mediante `15613b6`; la documentación y las evidencias se incorporaron mediante `4aa3fef`.
 
 ### Aplicación
 
@@ -22,7 +22,7 @@ Tag propuesto: `v2.0.0`. La base funcional está integrada en `develop` mediante
 
 - Documento de entrega 2, operación de Jenkins y trazabilidad de HU09/HU10.
 - Revisión local: 137 pruebas Bun y 14 E2E aprobadas; compilación correcta.
-- Jenkins #10 exitoso tras el merge, confirmado por el equipo.
+- [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/) exitoso tras el merge, con evidencia de disparo automático, pruebas, estado GitHub y notificación Discord.
 - Seis capturas PNG y dos impresiones PDF revisadas, con tabla Cypress transcrita.
 - [Video de entrega 2](https://youtu.be/Fn5n3GNrePk) incorporado a la documentación.
 

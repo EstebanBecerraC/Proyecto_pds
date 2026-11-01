@@ -234,4 +234,4 @@ La tarea de Jenkins sigue `develop`: los merges y pushes a esa rama pueden inici
 - [Documento principal de entrega 2 y arquitectura](docs/ENTREGA-2.md)
 - [Índice de evidencias](docs/evidencias/entrega-2/README.md)
 - [Registro de cambios](CHANGELOG.md)
-- [Borrador de notas para la release 2](docs/RELEASE-2.md)
+- [Notas de la release 2](docs/RELEASE-2.md)
