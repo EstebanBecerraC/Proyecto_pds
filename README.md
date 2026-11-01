@@ -238,4 +238,4 @@ El pipeline conserva `dist/`; no despliega la aplicación públicamente de forma
 - [Registro de cambios](CHANGELOG.md)
 - [Borrador de notas para la release 2](docs/RELEASE-2.md)
 
-La release 2 aún está en preparación; quedan por incorporar las capturas/reportes y el enlace del nuevo video antes de publicar el tag propuesto `v2.0.0`.
+La release 2 aún está en preparación; quedan por incorporar el resumen Cypress y el enlace del nuevo video antes de publicar el tag propuesto `v2.0.0`.

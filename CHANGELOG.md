@@ -23,7 +23,7 @@ Tag propuesto: `v2.0.0`. La base funcional está integrada en `develop` mediante
 - Documento de entrega 2, operación de Jenkins y trazabilidad de HU09/HU10.
 - Revisión local: 137 pruebas Bun y 14 E2E aprobadas; compilación correcta.
 - Jenkins #10 exitoso tras el merge, confirmado por el equipo.
-- Evidencias y cápsula pendientes de completar antes de publicar.
+- Cinco capturas PNG y dos impresiones PDF revisadas; falta adjuntar el desglose Cypress y el video antes de publicar.
 
 ## v1.0-entrega1
 

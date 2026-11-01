@@ -169,13 +169,13 @@ La revisión local del commit `c684be0`, posteriormente integrado mediante la PR
 
 Bun cubre autenticación, validaciones, API, persistencia, lógica de componentes y el helper de autenticación E2E. Cypress comprueba flujos completos de edición de campañas, perfil y favoritas. Estos escenarios no constituyen cobertura E2E de todas las funcionalidades.
 
-La PR #5 se integró en `develop` mediante `15613b603612cdfce45821b20840aa4b1e01c31c`. El equipo confirmó la ejecución automática y exitosa [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/), el estado de GitHub y la notificación de Discord. El acceso al pipeline requiere autorización; falta incorporar al repositorio las capturas y reportes seleccionados para que el evaluador pueda consultar evidencia sin iniciar sesión.
+La PR #5 se integró en `develop` mediante `15613b603612cdfce45821b20840aa4b1e01c31c`. El equipo confirmó la ejecución automática y exitosa [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/), el estado de GitHub y la notificación de Discord. El acceso al pipeline requiere autorización. El repositorio incluye cinco capturas PNG y dos impresiones PDF revisadas; falta adjuntar el resumen Cypress o su reporte equivalente. Consultar el índice para el alcance de cada evidencia.
 
 Resultado esperado: Jenkins **SUCCESS**, estado GitHub `success` y aviso de éxito en Discord. Pruebas o compilación fallidas deben dejar visible el fallo. Los errores de integración pueden producir un estado inestable; no equivalen a una validación exitosa.
 
 ## 9. Evidencias
 
-Consultar el [índice de evidencias](evidencias/entrega-2/README.md), que distingue resultados locales, confirmación del equipo y archivos aún por incorporar.
+Consultar el [índice de evidencias](evidencias/entrega-2/README.md), que distingue resultados locales, confirmación del equipo y archivos revisados.
 
 - [PR #3: perfil](https://github.com/EstebanBecerraC/Proyecto_pds/pull/3).
 - [PR #4: Cypress de perfil](https://github.com/EstebanBecerraC/Proyecto_pds/pull/4).
@@ -189,7 +189,7 @@ Las notas están preparadas en [RELEASE-2.md](RELEASE-2.md) y los cambios resumi
 Antes de publicar:
 
 - Integrar y validar la documentación.
-- Incorporar las evidencias accesibles para evaluación.
+- Completar el desglose Cypress entre las evidencias accesibles para evaluación.
 - Grabar la cápsula y agregar su enlace como **video de entrega 2**.
 - Revisar la versión estable, integrar `develop` hacia `main` mediante PR y validar el commit elegido.
 - Crear el tag propuesto `v2.0.0` en ese commit y publicar la GitHub Release con sus notas y enlaces.
