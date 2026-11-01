@@ -1,127 +1,87 @@
 # Pipeline de CrowdStarter
 
-## Configuracion en Jenkins
+Documento de operación técnica. El alcance, la arquitectura y los resultados de la entrega se reúnen en [ENTREGA-2.md](ENTREGA-2.md).
 
-- Tipo de tarea: Pipeline; definicion: Pipeline script from SCM.
-- SCM: Git; repositorio: https://github.com/EstebanBecerraC/Proyecto_pds.git.
-- Para preparar la entrega: rama */feature/ci-cd. Script Path: Jenkinsfile.
-- Tras integrar la configuracion: cambiar la rama a */develop.
-- Agente con etiqueta crowdstarter y un solo ejecutor. No ejecutar dos tareas
-  de este proyecto simultaneamente en el mismo agente: usan puertos 3000 y 5173.
+## Configuración en Jenkins
+
+- Tarea: `crowdstarter-ci`, tipo Pipeline, definición **Pipeline script from SCM**.
+- Repositorio: `https://github.com/EstebanBecerraC/Proyecto_pds.git`.
+- Rama: `*/develop`. Script Path: `Jenkinsfile`.
+- Agente: etiqueta `crowdstarter`, un ejecutor; controlador con cero ejecutores.
 - Complementos: Pipeline, Git, GitHub, Credentials Binding, JUnit y Timestamper.
-- Credencial global Secret text con ID discord-webhook. Su valor es la URL
-  del webhook de Discord; nunca se incluye en Git.
-- Conservar la configuracion del secreto compartido del webhook de GitHub.
+- No ejecutar otra tarea de este proyecto simultáneamente en el mismo agente: utiliza puertos 3000 y 5173.
+- Límite: 25 minutos por ejecución; concurrencia desactivada en la tarea.
 
-## Ejecucion
+### Credenciales
 
-El Jenkinsfile obtiene la rama configurada con checkout scm, instala las
-dependencias del lockfile, ejecuta Bun Test, compila y ejecuta Cypress.
-El evento push de GitHub solicita comprobar cambios en esa rama.
-Para la validacion previa, ejecutar Construir ahora sobre feature/ci-cd.
-No cambiar develop ni configurar su tarea hasta completar esta comprobacion.
+| ID | Uso |
+|---|---|
+| `discord-webhook` | URL privada para avisos finales. |
+| `github-commit-status` | Token limitado al repositorio, con Commit statuses: Read and write. |
+| `github-webhook-secret` | Secreto compartido configurado para validar el webhook de GitHub. |
 
-Las pruebas E2E usan el build con Vite preview y una base SQLite temporal.
-Esperan que el frontend y su proxy de API respondan y detienen los servicios
-al finalizar normalmente o ante errores. Una interrupcion forzada del agente
-puede requerir revisar procesos residuales.
+Los secretos se guardan en Jenkins y no se incluyen en el repositorio ni en capturas. La URL global de Jenkins debe usar HTTPS para que los enlaces de estados sean válidos.
 
-Jenkins publica los XML JUnit y conserva logs, screenshots y videos disponibles,
-incluso si las pruebas fallan. El build dist se conserva solo en ejecuciones
-exitosas. Se retienen 15 ejecuciones y artefactos de las 5 mas recientes.
+## Ejecución
 
-La notificacion final incluye resultado, trabajo, commit y enlace a Jenkins.
-Un error de notificacion se registra y puede marcar como inestable un build
-exitoso; no convierte una prueba fallida en exitosa.
+[Jenkinsfile](../Jenkinsfile) obtiene el código con `checkout scm`, publica `pending`, instala con `bun install --frozen-lockfile`, ejecuta Bun Test con JUnit, compila, prepara Cypress y ejecuta [scripts/ci-e2e.sh](../scripts/ci-e2e.sh).
 
-## Validacion realizada en Azure
+El webhook de eventos push apunta a `https://crowdstarter-jenkins.duckdns.org/github-webhook/`. El evento solicita comprobar cambios en la rama configurada. Un merge o push directo a `develop` puede iniciar el trabajo; abrir una PR por sí solo no valida su rama.
 
-- Pipeline desde SCM: 105 pruebas Bun y 6 escenarios Cypress aprobados.
-- Build de Vue generado correctamente.
-- Ejecucion #4: fallo controlado, commit 82529d2, estado failure en GitHub.
-- Ejecucion #5: recuperacion, commit 58f74ef, estado success en GitHub.
-- Ambas ejecuciones se iniciaron tras publicar cambios en feature/ci-cd.
-- El equipo confirmo la recepcion de ambos avisos en Discord.
-- La etapa temporal fue retirada; no se modifico develop.
+Las pruebas E2E usan Vite preview con el frontend compilado, la API Bun y un archivo SQLite temporal. El script espera una respuesta 401 de `/api/auth/me` a través del proxy y que el frontend responda. Un trap detiene los servicios y elimina el directorio temporal al finalizar normalmente o ante errores. Una interrupción forzada del agente puede requerir revisar procesos residuales.
 
-Evidencias:
-- Fallo: https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/4/
-- Recuperacion: https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/5/
-- El historial se limita a 15 ejecuciones: guardar las capturas de estas evidencias.
+Los helpers de autenticación limpian cookies y recargan la aplicación para aislar sesiones. Usan un PNG real sin interceptar cuerpos multipart de creación/edición. Ante HTTP 429, el helper respeta `Retry-After` y reintenta una vez; los demás errores inesperados hacen fallar el escenario. El límite de autenticación de la API permanece activo.
 
-Pendiente: integrar el Jenkinsfile a develop, cambiar la rama configurada y
-comprobar el disparo automatico de un cambio real en develop.
-## Herramientas comprobadas en el agente
+## Reportes y resultado
 
-Debian 13 x86_64, Java Temurin 21.0.13, Node.js 22.23.4, Bun 1.4.2 y Git 2.47.3.
-La etapa Preparar Cypress muestra su version exacta en cada ejecucion.
+- JUnit: `reports/bun.xml` y reportes XML Cypress.
+- Artefactos disponibles: `reports/**`, capturas y videos Cypress.
+- Frontend compilado: `dist/**`, solo si la ejecución es exitosa.
+- Retención: 15 ejecuciones y artefactos de las últimas 5.
 
-## Correccion de los escenarios E2E
+[github-status.mjs](../scripts/github-status.mjs) obtiene el SHA mediante `git rev-parse HEAD`. El contexto es `ci/jenkins/crowdstarter`; el enlace apunta a la ejecución.
 
-Los helpers de autenticacion borran todas las cookies y recargan la aplicacion
-antes de navegar al login o registro. La navegacion por hash puede conservar
-el usuario Vue en memoria aunque se hayan borrado las cookies.
+| Resultado Jenkins | Estado GitHub |
+|---|---|
+| PENDING | pending |
+| SUCCESS | success |
+| FAILURE / UNSTABLE | failure |
+| ABORTED / NOT_BUILT | error |
 
-Se utiliza un PNG real en cypress/fixtures/campana.png y se evita interceptar
-los cuerpos multipart de creacion y edicion: al reproducir el fallo, la
-interceptacion alteraba bytes binarios de la imagen. Las comprobaciones de
-guardado se realizan mediante la ruta de detalle, la confirmacion visible
-y las consultas a la API real.
+Un error al publicar el estado inicial falla el pipeline. Un error de publicación final o de Discord queda visible y puede marcar una ejecución exitosa como inestable. GitHub conserva el último estado recibido si no se puede publicar uno nuevo.
 
-Validacion local: Cypress 16.1.1, Electron headless, API Bun con SQLite temporal
-y frontend compilado con Vite preview: 6 escenarios aprobados, 0 fallidos.
-La ejecucion posterior en el agente Debian de Azure tambien fue exitosa.
+[notify-discord.mjs](../scripts/notify-discord.mjs) notifica resultado, trabajo, número, commit y enlace. El equipo confirmó que Discord está aceptado como sustitución de Slack.
 
-## Estados de commits en GitHub
+## Validación de entrega 2
 
-Crear un token fine-grained del propietario del repositorio, limitado a
-Proyecto_pds, con Commit statuses: Read and write. Guardarlo en Jenkins como
-Secret text con ID github-commit-status. Metadata de lectura es automatico.
-No se requieren permisos de escritura de codigo ni de administracion.
+La revisión local de `c684be0` aprobó **137 pruebas Bun**, **851 expectativas en 13 archivos**, build y **14 escenarios Cypress**: HU05 (6), HU09 (4), HU10 (4).
 
-El pipeline publica pending tras obtener el codigo y el estado final despues
-de procesar los reportes y artefactos. El contexto es ci/jenkins/crowdstarter.
-El SHA se obtiene con git rev-parse HEAD para asociar el resultado al commit
-realmente probado, aunque la rama avance durante la ejecucion.
-SUCCESS publica success; FAILURE y UNSTABLE publican failure; ABORTED y
-NOT_BUILT publican error. El enlace apunta a BUILD_URL y requiere Jenkins URL HTTPS.
+La [PR #5](https://github.com/EstebanBecerraC/Proyecto_pds/pull/5) se integró en `develop` mediante `15613b603612cdfce45821b20840aa4b1e01c31c`. El equipo confirmó que [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/) se inició automáticamente y terminó correctamente, con estado GitHub y aviso Discord. Su panel requiere autenticación. Las capturas de Jenkins, GitHub y Discord y las impresiones de las funcionalidades están enlazadas en el [índice de evidencias](evidencias/entrega-2/README.md). El índice incluye el resumen Cypress y una tabla transcrita para facilitar su lectura ante los códigos ANSI visibles en consola. El aviso de Discord identifica el trabajo y la ejecución, pero muestra «Commit: no disponible»; la captura de Jenkins acredita el SHA.
 
-Un error al publicar el estado queda visible en consola. Si ocurre al inicio,
-el pipeline falla; si ocurre al finalizar, puede marcar un build exitoso como
-inestable, sin ocultar un fallo previo. GitHub puede conservar el ultimo
-estado recibido cuando existe un problema de red o de credenciales.
+Existen referencias históricas a las ejecuciones [#4](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/4/) (fallo controlado) y [#5](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/5/) (recuperación), sobre la configuración inicial de CI. No validan HU09/HU10 y pueden caducar por retención.
 
-La publicacion requiere validacion real en Jenkins y GitHub con la credencial
-configurada. Los permisos de red del panel siguen aplicandose al enlace Details.
+## Herramientas del agente
+
+Versiones registradas durante la configuración: Debian 13 x86_64, Java Temurin 21.0.13, Node.js 22.23.4, Bun 1.4.2 y Git 2.47.3. Cypress comprobado: 16.1.1; su etapa muestra la versión exacta en cada ejecución. Son versiones del entorno comprobado, no requisitos de actualización automática.
 
 ## Infraestructura y acceso
 
-- VM Ubuntu Server 24.04 LTS en Azure, North Central US, tamano B2als_v2.
-- Controlador Jenkins en Docker, con cero ejecutores y volumen jenkins_home.
-- Agente Docker independiente, etiqueta crowdstarter y un ejecutor.
-- Caddy recibe HTTP/HTTPS y administra el certificado del subdominio DuckDNS.
-- URL: https://crowdstarter-jenkins.duckdns.org/
-- Puerto 8080 publicado solo en 127.0.0.1; no exponerlo en Azure.
-- Puertos 80 y 443 permiten trafico publico; SSH 22 permanece limitado a la IP
-  publica del administrador y requiere clave privada.
-- El acceso por IP en Caddy se retiro por decision del equipo: el login puede
-  abrirse desde cualquier red. El equipo usa una cuenta administradora compartida.
-- Comprobar en Seguridad de Jenkins que el registro publico y la lectura anonima
-  esten desactivados. Verificar en incognito que los trabajos requieren login.
-- El webhook /github-webhook/ valida el secreto compartido; GitHub no usa
-  la cuenta administradora ni la clave SSH.
-- La aplicacion se levanta durante las pruebas; generar dist no implica
-  desplegar la aplicacion publicamente de manera permanente.
+- VM `vm-jenkins`: Ubuntu Server 24.04 LTS, North Central US, B2als_v2.
+- Controlador Docker con volumen `jenkins_home`.
+- Agente Docker independiente conectado por WebSocket.
+- Caddy administra HTTPS para el subdominio DuckDNS.
+- Puerto 8080 publicado solo en `127.0.0.1`; web pública por 80 y 443.
+- SSH restringido a la IP del administrador y autenticado con clave.
+- El panel se puede abrir desde cualquier red y requiere autenticación. Verificar que registro público y lectura anónima estén desactivados.
 
-Flujo: GitHub push -> Caddy HTTPS -> Jenkins -> agente -> pruebas/build ->
-reportes y artefactos -> estado en GitHub y aviso en Discord.
+La aplicación se levanta dentro del agente durante E2E. Conservar `dist/` no despliega un sitio público ni la API/SQLite de forma permanente.
 
 ## Iniciar y usar Jenkins
 
-1. Iniciar vm-jenkins desde Azure si esta detenida.
-2. Abrir la URL HTTPS e iniciar sesion.
-3. Los contenedores tienen restart: unless-stopped. Si fueron detenidos
-   manualmente o no arrancan, conectarse por SSH y ejecutar:
+1. Iniciar la VM en Azure si está desasignada.
+2. Abrir [Jenkins](https://crowdstarter-jenkins.duckdns.org/) e iniciar sesión.
+3. Comprobar que el agente `crowdstarter-agent` esté conectado.
+4. Si los contenedores no arrancan, conectarse por SSH y ejecutar:
 
 ```bash
 cd ~/jenkins
@@ -129,21 +89,43 @@ sudo docker compose -f compose.yaml -f compose.agent.yaml -f compose.tools.yaml 
 sudo docker compose -f compose.yaml -f compose.agent.yaml -f compose.tools.yaml -f compose.web.yaml ps
 ```
 
-Abrir crowdstarter-ci -> Construir ahora para una ejecucion manual.
-Revisar Salida de consola, Resultados de pruebas y Artefactos.
-Los archivos Compose, Dockerfile del agente, agent.env y Caddyfile estan en
-~/jenkins de la VM. agent.env contiene un secreto y no debe subirse al repositorio.
+Los archivos Compose, Dockerfile del agente, `agent.env` y Caddyfile están en `~/jenkins` de la VM. `agent.env` contiene un secreto.
 
-## Pausa y reactivacion
+Para una ejecución manual: abrir `crowdstarter-ci` → **Construir ahora**. Consultar consola, resultados de pruebas y artefactos.
 
-- Detener y desasignar la VM desde Azure durante las semanas de pausa;
-  no eliminar la VM ni su disco. El disco y ciertos recursos de red siguen
-  consumiendo credito aunque no haya computo activo.
-- No ejecutar docker compose down -v: eliminaria los volumenes persistentes.
-- Revisar el saldo de Azure y la fecha de caducidad del token GitHub.
-- Al reactivar, comprobar la IP publica. Si cambio, actualizar DuckDNS.
-- Si cambio la IP del administrador, actualizar la regla SSH de Azure.
-- Verificar HTTPS, agente online y ejecutar manualmente el pipeline.
-- Mantener una copia segura de la configuracion y del volumen jenkins_home
-  antes de eliminar recursos. Esa copia puede contener credenciales y no
-  debe publicarse en GitHub.
+Para probar el webhook: integrar una PR hacia `develop`, esperar una ejecución automática sin pulsar el botón y cotejar causa y SHA. Revisar además el estado del commit y Discord.
+
+## Ejecución E2E local con base temporal
+
+Las pruebas crean y modifican datos. Usar una base separada. Desde la raíz del repositorio en PowerShell:
+
+```powershell
+bun install --frozen-lockfile
+bun run build
+$demoDatabase = Join-Path ([System.IO.Path]::GetTempPath()) ('crowdstarter-e2e-' + [guid]::NewGuid().ToString('N') + '.sqlite')
+$env:DATABASE_PATH = $demoDatabase
+$env:APP_ORIGIN = 'http://localhost:5173'
+bun run start:server
+```
+
+En otra terminal, desde la raíz:
+
+```powershell
+bun run preview
+```
+
+En una tercera terminal, desde la raíz:
+
+```powershell
+bun run test:e2e
+```
+
+Al terminar, detener API y preview con Ctrl+C. En la terminal de la API, ejecutar `Remove-Item Env:DATABASE_PATH,Env:APP_ORIGIN`. El archivo temporal puede conservarse para inspección; repetir el procedimiento genera una base distinta.
+
+En el agente Linux, Jenkins automatiza el ciclo completo con `bash scripts/ci-e2e.sh`, después del build. Este script necesita Bash, curl, Bun y las dependencias de sistema de Cypress.
+
+## Pausa y reactivación
+
+Durante una pausa, detener y desasignar la VM desde Azure conservando disco y volúmenes. Disco y ciertos recursos de red pueden seguir consumiendo crédito. No ejecutar `docker compose down -v`, porque elimina volúmenes persistentes.
+
+Antes de reactivar, revisar saldo, vigencia del token GitHub, IP pública y DuckDNS; actualizar la regla SSH si cambió la IP del administrador. Comprobar HTTPS, agente online y una ejecución manual. Mantener una copia segura de configuración y `jenkins_home`; puede contener credenciales y no debe publicarse.

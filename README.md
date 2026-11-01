@@ -32,7 +32,8 @@ Actualmente, la plataforma permite:
 - Modificar campañas.
 - Cancelar campañas.
 - Eliminar campañas.
-- Guardar campañas activas como favoritas y consultar la selección personal.
+- Consultar y actualizar el perfil, cambiar contraseña y eliminar la cuenta con restricciones.
+- Guardar y consultar campañas favoritas por usuario.
 
 ## 3. Funcionalidades actualmente implementadas
 
@@ -91,9 +92,9 @@ El proyecto está pensado para funcionar en cualquier sistema operativo compatib
 - Linux
 - macOS
 
-## 7. Instalación
+## 6. Instalación
 
-### 7.1. Clonar el repositorio
+### 6.1. Clonar el repositorio
 
 Clona el repositorio de CrowdStarter:
 
@@ -105,78 +106,78 @@ Ingresa al directorio del proyecto:
 - cd .\Proyecto_pds\
 
 
-### 7.2. Instalar dependencias
+### 6.2. Instalar dependencias
 
 Ejecuta:
 
 - bun install
 
-## 8. Ejecución
+## 7. Ejecución
 
 CrowdStarter requiere ejecutar el servidor de la API y el servidor de desarrollo del frontend.
 
-### 8.1. Ejecutar la API
+### 7.1. Ejecutar la API
 
 - bun run dev:server
 
-### 8.2. Ejecutar el frontend
+### 7.2. Ejecutar el frontend
 
 En otra terminal:
 
 - bun run dev
 
 
-### 8.3. URLs de desarrollo
+### 7.3. URLs de desarrollo
 
 Una vez iniciados ambos servicios:
 
 - **Frontend:** http://localhost:5173
 - **API:** http://localhost:3000
 
-## 9. Ejecución de pruebas
+## 8. Ejecución de pruebas
 
-### 9.1. Tests unitarios
+### 8.1. Tests unitarios
 
 Para ejecutar las pruebas unitarias:
 
 - bun test
 
 
-### 9.2. Tests end-to-end
+### 8.2. Tests end-to-end
 
-El proyecto utiliza Cypress para realizar pruebas end-to-end.
+El proyecto utiliza Cypress para realizar pruebas end-to-end. Con API y frontend disponibles, ejecutar `bun run test:e2e`. Para usar una base separada y el frontend compilado, seguir [E2E local con base temporal](docs/CI-CD.md#ejecución-e2e-local-con-base-temporal).
 
 
-### 9.3. Build
+### 8.3. Build
 
 Para generar el build de producción:
 
 - bun run build
 
 
-## 10. Uso básico
+## 9. Uso básico
 
-### 10.1. Registro e inicio de sesión
+### 9.1. Registro e inicio de sesión
 
 Al ingresar a CrowdStarter, el usuario debe registrarse o iniciar sesión para acceder a las funcionalidades de la plataforma.
 
-### 10.2. Explorar campañas
+### 9.2. Explorar campañas
 
 Una vez autenticado, el usuario puede visualizar las campañas actualmente activas.
 
 La plataforma también cuenta con un buscador que permite encontrar campañas de acuerdo con el interés del usuario.
 
-### 10.3. Consultar una campaña
+### 9.3. Consultar una campaña
 
 Al seleccionar una campaña, el usuario puede acceder a su información y conocer los detalles del proyecto.
 
-### 10.4. Realizar un aporte
+### 9.4. Realizar un aporte
 
 Desde la página de una campaña, el usuario puede realizar un aporte al proyecto.
 
 Los aportes realizados quedan registrados y posteriormente pueden consultarse desde el historial de aportes del usuario.
 
-### 10.5. Gestionar campañas propias
+### 9.5. Gestionar campañas propias
 
 Los usuarios cuentan con una sección destinada a sus propias campañas.
 
@@ -189,6 +190,12 @@ Desde allí pueden:
 - Eliminar campañas.
 
 
+## Gestión del perfil — HU09
+
+Desde **Mi perfil** puedes consultar y modificar nombre y correo, cambiar tu contraseña o eliminar la cuenta. La eliminación exige escribir `entiendo`, se bloquea si tienes campañas activas y conserva los aportes mediante anonimización.
+
+- [Historia, criterios, API y pruebas](HU-09.md)
+
 ## Campañas favoritas — HU10
 
 Desde el detalle de una campaña activa, selecciona **Guardar en favoritas**.
@@ -197,7 +204,7 @@ Las favoritas se conservan entre sesiones y pertenecen únicamente a tu cuenta.
 Las campañas canceladas dejan de ser visibles para otros usuarios, también en esta lista.
 
 - [Historia, criterios y API](HU-10.md)
-- [Verificación, evidencias y guía de cierre de entrega 2](docs/HU10-verificacion.md)
+- [Verificación de favoritas](docs/HU10-verificacion.md)
 
 ## Integrantes
 
@@ -207,18 +214,28 @@ Las campañas canceladas dejan de ser visibles para otros usuarios, también en 
 
 ## Enlaces
 
-- Repositorio: https://github.com/EstebanBecerraC/Proyecto_pds.git
-- Video capsula: https://youtu.be/O6EkOwl1mQY
-- Wiki: https://github.com/EstebanBecerraC/Proyecto_pds/wiki
-- Release: https://github.com/EstebanBecerraC/Proyecto_pds/releases
+- [Repositorio](https://github.com/EstebanBecerraC/Proyecto_pds)
+- [Video existente](https://youtu.be/O6EkOwl1mQY)
+- [Cápsula de entrega 2](https://youtu.be/Fn5n3GNrePk)
+- [Wiki](https://github.com/EstebanBecerraC/Proyecto_pds/wiki)
+- [Releases](https://github.com/EstebanBecerraC/Proyecto_pds/releases)
 
-## Integracion continua - Entrega 2
+## Integración continua — Entrega 2
 
 El pipeline de Jenkins ejecuta las pruebas Bun, compila el frontend y ejecuta
 Cypress con una base SQLite temporal. Publica reportes y artefactos, actualiza
-el estado del commit en GitHub y envia notificaciones a Discord.
+el estado del commit en GitHub y envía notificaciones a Discord.
 
-- [Configuracion, operacion y evidencias de CI/CD](docs/CI-CD.md)
-- [Jenkins](https://crowdstarter-jenkins.duckdns.org/) (requiere autenticacion)
+- [Configuración y operación de CI/CD](docs/CI-CD.md)
+- [Jenkins](https://crowdstarter-jenkins.duckdns.org/) (requiere autenticación)
 
-La configuracion se valida en feature/ci-cd antes de integrarse a develop.
+La tarea sigue `develop`: los merges y pushes a esa rama pueden iniciar Jenkins automáticamente. La validación local de HU10 obtuvo **137 pruebas Bun y 14 escenarios Cypress aprobados**, además del build. El equipo confirmó el éxito del pipeline posterior al merge en [Jenkins #10](https://crowdstarter-jenkins.duckdns.org/job/crowdstarter-ci/10/) (requiere autenticación).
+
+El pipeline conserva `dist/`; no despliega la aplicación públicamente de forma permanente. Discord está aceptado para esta entrega en lugar de Slack.
+
+- [Documento principal de entrega 2 y arquitectura](docs/ENTREGA-2.md)
+- [Índice de evidencias](docs/evidencias/entrega-2/README.md)
+- [Registro de cambios](CHANGELOG.md)
+- [Borrador de notas para la release 2](docs/RELEASE-2.md)
+
+La documentación, las ocho evidencias y el [video de entrega 2](https://youtu.be/Fn5n3GNrePk) están preparados. Falta integrar y validar la documentación y publicar la release con el tag propuesto `v2.0.0`.
