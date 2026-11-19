@@ -206,32 +206,15 @@ Las campañas canceladas dejan de ser visibles para otros usuarios, también en 
 - [Historia, criterios y API](HU-10.md)
 - [Verificación de favoritas](docs/HU10-verificacion.md)
 
-## Integrantes
+## Integrante
 
 - Esteban Becerra
-- Javiera Cortés
-- Beatriz Vázquez
 
 ## Enlaces
 
 - [Repositorio](https://github.com/EstebanBecerraC/Proyecto_pds)
 - [Video existente](https://youtu.be/O6EkOwl1mQY)
 - [Cápsula de entrega 2](https://youtu.be/Fn5n3GNrePk)
+- [Cápsula de entrega 3](https://youtu.be/Q98jLewY7iU)
 - [Wiki](https://github.com/EstebanBecerraC/Proyecto_pds/wiki)
 - [Releases](https://github.com/EstebanBecerraC/Proyecto_pds/releases)
-
-## Integración continua — Entrega 2
-
-El pipeline de Jenkins ejecuta las pruebas Bun, compila el frontend y ejecuta
-Cypress con una base SQLite temporal. Publica reportes y artefactos, actualiza
-el estado del commit en GitHub y envía notificaciones a Discord.
-
-- [Configuración y operación de CI/CD](docs/CI-CD.md)
-- [Jenkins](https://crowdstarter-jenkins.duckdns.org/) (requiere autenticación)
-
-La tarea de Jenkins sigue `develop`: los merges y pushes a esa rama pueden iniciar Jenkins automáticamente. Como ejemplo: La validación local de HU10 obtuvo **137 pruebas Bun y 14 escenarios Cypress aprobados**, además del build. 
-
-- [Documento principal de entrega 2 y arquitectura](docs/ENTREGA-2.md)
-- [Índice de evidencias](docs/evidencias/entrega-2/README.md)
-- [Registro de cambios](CHANGELOG.md)
-- [Notas de la release 2](docs/RELEASE-2.md)
