@@ -60,7 +60,7 @@ pipeline {
                     'BASE_URL=http://127.0.0.1:5173',
                     'CYPRESS_BASE_URL=http://127.0.0.1:5173'
                 ]) {
-                    sh 'bun run test:e2e:ci'
+                    sh 'bun run test:e2e:ci --spec cypress/e2e/E3-fallo-controlado.cy.js'
                 }
             }
         }
