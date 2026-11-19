@@ -56,7 +56,12 @@ pipeline {
         }
         stage('Pruebas E2E') {
             steps {
-                sh 'bun run test:e2e:ci'
+                withEnv([
+                    'BASE_URL=http://127.0.0.1:5173',
+                    'CYPRESS_BASE_URL=http://127.0.0.1:5173'
+                ]) {
+                    sh 'bun run test:e2e:ci'
+                }
             }
         }
     }
