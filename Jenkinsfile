@@ -18,7 +18,7 @@ pipeline {
             steps {
                 deleteDir()
                 checkout scm
-                sh 'mkdir -p reports'
+                sh 'mkdir -p reports/entrega-3'
             }
         }
         stage('Estado pendiente en GitHub') {
@@ -37,7 +37,7 @@ pipeline {
         }
         stage('Pruebas Bun') {
             steps {
-                sh 'bun test --reporter=junit --reporter-outfile=reports/bun.xml'
+                sh 'bun test --reporter=junit --reporter-outfile=reports/entrega-3/bun.xml'
             }
         }
         stage('Build') {
@@ -56,7 +56,12 @@ pipeline {
         }
         stage('Pruebas E2E') {
             steps {
-                sh 'bash scripts/ci-e2e.sh'
+                withEnv([
+                    'BASE_URL=http://127.0.0.1:5173',
+                    'CYPRESS_BASE_URL=http://127.0.0.1:5173'
+                ]) {
+                    sh 'bun run test:e2e:ci'
+                }
             }
         }
     }
